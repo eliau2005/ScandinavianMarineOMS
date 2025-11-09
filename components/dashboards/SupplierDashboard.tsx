@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { account } from "../../lib/appwrite";
+import PriceListManagement from "./supplier/PriceListManagement";
+import IncomingOrders from "./supplier/IncomingOrders";
+
+type SupplierView = "orders" | "pricing";
 
 const SupplierDashboard = () => {
+  const [activeView, setActiveView] = useState<SupplierView>("orders");
+
   const handleLogout = async () => {
     try {
       await account.deleteSession("current");
@@ -9,6 +15,22 @@ const SupplierDashboard = () => {
     } catch (error) {
       console.error("Logout error:", error);
       window.location.reload();
+    }
+  };
+
+  const navLinks: { id: SupplierView; label: string; icon: string }[] = [
+    { id: "orders", label: "Incoming Orders", icon: "shopping_cart" },
+    { id: "pricing", label: "Price List Management", icon: "receipt_long" },
+  ];
+
+  const renderContent = () => {
+    switch (activeView) {
+      case "orders":
+        return <IncomingOrders />;
+      case "pricing":
+        return <PriceListManagement />;
+      default:
+        return <IncomingOrders />;
     }
   };
 
@@ -23,6 +45,24 @@ const SupplierDashboard = () => {
             Supplier Portal
           </h1>
         </div>
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <button
+              key={link.id}
+              onClick={() => setActiveView(link.id)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                activeView === link.id
+                  ? "text-supplier-accent font-semibold"
+                  : "text-gray-600 dark:text-gray-300 hover:text-supplier-accent dark:hover:text-supplier-accent"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">
+                {link.icon}
+              </span>
+              <span>{link.label}</span>
+            </button>
+          ))}
+        </nav>
         <button
           onClick={handleLogout}
           className="flex items-center justify-center gap-2 px-4 py-2 bg-supplier-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-colors text-sm"
@@ -31,21 +71,8 @@ const SupplierDashboard = () => {
           <span>Logout</span>
         </button>
       </header>
-      <main className="flex flex-1 flex-col items-center justify-center overflow-y-auto">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md">
-          <span className="material-symbols-outlined text-6xl text-supplier-accent">
-            construction
-          </span>
-          <h1 className="mt-4 text-3xl font-bold text-gray-800 dark:text-gray-200">
-            Under Development
-          </h1>
-          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-            This page is currently under development.
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            Supplier features coming soon!
-          </p>
-        </div>
+      <main className="flex flex-1 flex-col overflow-y-auto">
+        {renderContent()}
       </main>
     </div>
   );
