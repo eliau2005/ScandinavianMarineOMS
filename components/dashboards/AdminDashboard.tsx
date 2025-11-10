@@ -4,14 +4,16 @@ import UserManagement from "./admin/UserManagement";
 import SupplierCustomerAssociations from "./admin/SupplierCustomerAssociations";
 import OrdersOverview from "./admin/OrdersOverview";
 import AllPriceLists from "./admin/AllPriceLists";
+import NotificationsModal from "./admin/NotificationsModal";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 
 type AdminView = "dashboard" | "users" | "associations" | "orders" | "pricing";
 
 const AdminDashboard = () => {
-  const [activeView, setActiveView] = useState<AdminView>("users");
+  const [activeView, setActiveView] = useState<AdminView>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -30,6 +32,7 @@ const AdminDashboard = () => {
   };
 
   const navLinks: { id: AdminView; label: string; disabled: boolean }[] = [
+    { id: "dashboard", label: "Dashboard", disabled: false },
     { id: "users", label: "Users", disabled: false },
     {
       id: "associations",
@@ -53,13 +56,76 @@ const AdminDashboard = () => {
       case "dashboard":
       default:
         return (
-          <div className="flex flex-1 flex-col items-center justify-center text-gray-800 dark:text-gray-200">
-            <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-              <span className="material-symbols-outlined text-6xl text-admin-accent">
-                engineering
-              </span>
-              <h1 className="mt-4 text-3xl font-bold">Dashboard</h1>
-              <p className="mt-2 text-lg">This page is under development.</p>
+          <div className="flex flex-1 flex-col p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                Quick Actions
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Manage your system efficiently
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
+              {/* Create New User */}
+              <button
+                onClick={() => setActiveView("users")}
+                className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-8 border-2 border-transparent hover:border-admin-accent"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-admin-accent/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-4xl text-admin-accent">
+                      person_add
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    Create New User
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Add new users to the system and manage their roles
+                  </p>
+                </div>
+              </button>
+
+              {/* Create Association */}
+              <button
+                onClick={() => setActiveView("associations")}
+                className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-8 border-2 border-transparent hover:border-admin-accent"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-admin-accent/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-4xl text-admin-accent">
+                      link
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    Create Association
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Link customers with suppliers for ordering
+                  </p>
+                </div>
+              </button>
+
+              {/* View New Notifications */}
+              <button
+                onClick={() => setShowNotificationsModal(true)}
+                className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-8 border-2 border-transparent hover:border-admin-accent"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-admin-accent/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-4xl text-admin-accent">
+                      notifications_active
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    View New Notifications
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Review and approve pending orders and price lists
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
         );
@@ -146,6 +212,12 @@ const AdminDashboard = () => {
       <main className="flex flex-1 flex-col overflow-y-auto">
         {renderContent()}
       </main>
+
+      {/* Notifications Modal */}
+      <NotificationsModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
+      />
     </div>
   );
 };

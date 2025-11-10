@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { account } from "../../../lib/appwrite";
 import { associationService, orderService } from "../../../lib/orderService";
 import { priceListService } from "../../../lib/priceListService";
 import type { PriceListWithItems, PriceListTableRow } from "../../../types/priceList";
 import type { CartItem, OrderItem } from "../../../types/order";
 import { generateOrderNumber, calculateOrderTotal } from "../../../types/order";
+import { createNotification } from "../../../lib/notificationService";
 
 interface Notification {
   type: "success" | "error" | "info";
@@ -71,13 +74,30 @@ const PlaceOrder = () => {
     try {
       const lists = await priceListService.getActiveBySupplier(selectedSupplier);
 
+      if (lists.length === 0) {
+        // No active price lists
+        toast.error("This supplier does not have an active price list.");
+        setPriceLists([]);
+        setSelectedPriceList("");
+        setProducts([]);
+        setCart(new Map());
+        return;
+      }
+
       // Load full details for each list
       const listsWithItems = await Promise.all(
         lists.map((list) => priceListService.getWithItems(list.$id!))
       );
 
       setPriceLists(listsWithItems);
-      setSelectedPriceList("");
+
+      // Auto-select if exactly one price list
+      if (listsWithItems.length === 1) {
+        setSelectedPriceList(listsWithItems[0].$id!);
+      } else {
+        setSelectedPriceList("");
+      }
+
       setProducts([]);
       setCart(new Map());
     } catch (error) {
@@ -171,7 +191,7 @@ const PlaceOrder = () => {
         };
       });
 
-      await orderService.create({
+      const newOrder = await orderService.create({
         order_number: generateOrderNumber(),
         customer_id: currentUser.id,
         customer_name: currentUser.name,
@@ -179,7 +199,7 @@ const PlaceOrder = () => {
         supplier_name: supplier.name,
         price_list_id: priceList.$id!,
         price_list_name: priceList.name,
-        status: "pending",
+        status: "pending_approval",
         order_date: new Date().toISOString(),
         delivery_start_date: priceList.effective_date,
         delivery_end_date: priceList.expiry_date,
@@ -189,7 +209,15 @@ const PlaceOrder = () => {
         total_amount: 0, // Calculated by service
       });
 
-      showNotification("success", "Order placed successfully!");
+      // Create notification for admins
+      await createNotification(
+        "order_pending_approval",
+        `Order ${newOrder.order_number} from ${currentUser.name} is pending approval`,
+        newOrder.$id!,
+        currentUser.name
+      );
+
+      showNotification("success", "Order placed successfully and is pending admin approval!");
 
       // Reset form
       setCart(new Map());
@@ -226,6 +254,20 @@ const PlaceOrder = () => {
 
   return (
     <div className="flex flex-1 flex-col p-6">
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+
       {/* Notification */}
       {notification && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in-right">

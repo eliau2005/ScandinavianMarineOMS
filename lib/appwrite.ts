@@ -18,6 +18,7 @@ export const appwriteConfig = {
   customerSupplierAssocCollectionId: import.meta.env.VITE_APPWRITE_CUSTOMER_SUPPLIER_ASSOC_COLLECTION_ID,
   ordersCollectionId: import.meta.env.VITE_APPWRITE_ORDERS_COLLECTION_ID,
   unitsOfMeasureCollectionId: import.meta.env.VITE_APPWRITE_UNITS_OF_MEASURE_COLLECTION_ID,
+  notificationsCollectionId: import.meta.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID,
 };
 
 export { client };

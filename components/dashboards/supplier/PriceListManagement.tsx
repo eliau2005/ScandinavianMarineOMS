@@ -16,7 +16,9 @@ import PriceListProductTable from "../../priceList/PriceListProductTable";
 import PriceListCard from "../../priceList/PriceListCard";
 import CreatePriceListModal from "../../priceList/CreatePriceListModal";
 import ConfirmationDialog from "../../common/ConfirmationDialog";
-import { exportPriceListToPDF, exportSimplePriceListToPDF } from "../../../lib/pdfExport";
+import { createNotification } from "../../../lib/notificationService";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import PriceListPDFDocument from "../../pdf/PriceListPDFDocument";
 
 type View = "list" | "edit" | "view";
 
@@ -40,6 +42,8 @@ const PriceListManagement = () => {
     id: string;
     name: string;
   } | null>(null);
+  const [lastEditRequestTime, setLastEditRequestTime] = useState<number | null>(null);
+  const [canRequestEdit, setCanRequestEdit] = useState(true);
 
   // Load current user
   useEffect(() => {
@@ -181,17 +185,67 @@ const PriceListManagement = () => {
 
   const handleSetActive = async (priceList: PriceList) => {
     try {
-      await priceListService.activate(priceList.$id!);
+      // Update status to pending_approval instead of activating directly
+      await priceListService.update(priceList.$id!, {
+        status: "pending_approval",
+      });
+
+      // Create notification for admins
+      await createNotification(
+        "price_list_pending_approval",
+        `Price list "${priceList.name}" from ${currentUser?.name} is pending approval`,
+        priceList.$id!,
+        currentUser?.name || "Unknown Supplier"
+      );
+
       await loadPriceLists();
       showNotification(
         "success",
-        "Price list activated successfully. Any previously active price list has been archived."
+        "Price list submitted for admin approval successfully"
       );
     } catch (error) {
-      console.error("Error activating price list:", error);
+      console.error("Error submitting price list for approval:", error);
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to activate price list";
+        error instanceof Error ? error.message : "Failed to submit price list for approval";
       showNotification("error", errorMessage);
+    }
+  };
+
+  const handleRequestEdit = async () => {
+    if (!selectedPriceList || !currentUser) return;
+
+    // Check if an edit request was sent in the last hour
+    const now = Date.now();
+    if (lastEditRequestTime && now - lastEditRequestTime < 60 * 60 * 1000) {
+      const minutesLeft = Math.ceil((60 * 60 * 1000 - (now - lastEditRequestTime)) / (1000 * 60));
+      showNotification(
+        "error",
+        `You can only send one edit request per hour. Please wait ${minutesLeft} more minute(s).`
+      );
+      return;
+    }
+
+    try {
+      // Create notification for admins
+      await createNotification(
+        "price_list_pending_approval",
+        `Edit request for price list "${selectedPriceList.name}" from ${currentUser.name}`,
+        selectedPriceList.$id!,
+        currentUser.name
+      );
+
+      setLastEditRequestTime(now);
+      setCanRequestEdit(false);
+
+      // Re-enable after 1 hour
+      setTimeout(() => {
+        setCanRequestEdit(true);
+      }, 60 * 60 * 1000);
+
+      showNotification("success", "Edit request sent to admin successfully");
+    } catch (error) {
+      console.error("Error sending edit request:", error);
+      showNotification("error", "Failed to send edit request");
     }
   };
 
@@ -212,6 +266,28 @@ const PriceListManagement = () => {
 
   const handleSavePrices = async () => {
     if (!selectedPriceList) return;
+
+    // Check if price list is draft
+    if (selectedPriceList.status !== "draft") {
+      showNotification("error", "Only draft price lists can be edited");
+      return;
+    }
+
+    // Check 24-hour cooldown
+    if (selectedPriceList.$updatedAt) {
+      const lastUpdated = new Date(selectedPriceList.$updatedAt);
+      const now = new Date();
+      const hoursSinceUpdate = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceUpdate < 24) {
+        const hoursLeft = Math.ceil(24 - hoursSinceUpdate);
+        showNotification(
+          "error",
+          `You can only edit this price list once every 24 hours. Please wait ${hoursLeft} more hour(s).`
+        );
+        return;
+      }
+    }
 
     setSaving(true);
     try {
@@ -389,7 +465,7 @@ const PriceListManagement = () => {
 
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
 
-                    Edit prices for this list
+                    {selectedPriceList?.status === "draft" ? "Edit prices for this list" : "View-only mode (not draft)"}
 
                   </p>
 
@@ -397,53 +473,99 @@ const PriceListManagement = () => {
 
                 <div className="flex items-center gap-2">
 
-                  <button
+                  {selectedPriceList && (
 
-                    onClick={() =>
+                    <PDFDownloadLink
 
-                      selectedPriceList &&
+                      document={
 
-                      exportPriceListToPDF(selectedPriceList, tableData)
+                        <PriceListPDFDocument
 
-                    }
+                          priceList={selectedPriceList}
 
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          tableData={tableData}
 
-                  >
+                        />
 
-                    <span className="material-symbols-outlined text-base">
+                      }
 
-                      picture_as_pdf
+                      fileName={`${selectedPriceList.name}.pdf`}
 
-                    </span>
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
 
-                    <span>Export PDF</span>
+                    >
 
-                  </button>
+                      {({ loading }) => (
 
-                  <button
+                        <>
 
-                    onClick={handleSavePrices}
+                          <span className="material-symbols-outlined text-base">
 
-                    disabled={saving}
+                            picture_as_pdf
 
-                    className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          </span>
 
-                  >
+                          <span>{loading ? "Generating..." : "Export PDF"}</span>
 
-                    {saving && (
+                        </>
 
-                      <span className="animate-spin material-symbols-outlined text-base">
+                      )}
 
-                        progress_activity
+                    </PDFDownloadLink>
+
+                  )}
+
+                  {selectedPriceList?.status === "active" && (
+
+                    <button
+
+                      onClick={handleRequestEdit}
+
+                      disabled={!canRequestEdit}
+
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+
+                    >
+
+                      <span className="material-symbols-outlined text-base">
+
+                        edit_note
 
                       </span>
 
-                    )}
+                      <span>Request Edit</span>
 
-                    <span>{saving ? "Saving..." : "Save Prices"}</span>
+                    </button>
 
-                  </button>
+                  )}
+
+                  {selectedPriceList?.status === "draft" && (
+
+                    <button
+
+                      onClick={handleSavePrices}
+
+                      disabled={saving}
+
+                      className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+
+                    >
+
+                      {saving && (
+
+                        <span className="animate-spin material-symbols-outlined text-base">
+
+                          progress_activity
+
+                        </span>
+
+                      )}
+
+                      <span>{saving ? "Saving..." : "Save Prices"}</span>
+
+                    </button>
+
+                  )}
 
                 </div>
 
@@ -471,7 +593,7 @@ const PriceListManagement = () => {
 
                       onPriceChange={handlePriceChange}
 
-                      editable={true}
+                      editable={selectedPriceList?.status === "draft"}
 
                     />
 
@@ -649,53 +771,89 @@ const PriceListManagement = () => {
 
                 <div className="flex items-center gap-2">
 
-  
 
-                  <button
 
-  
+                  {selectedPriceList && (
 
-                    onClick={() =>
 
-  
 
-                      selectedPriceList &&
+                    <PDFDownloadLink
 
-  
 
-                      exportPriceListToPDF(selectedPriceList, tableData)
 
-  
+                      document={
 
-                    }
 
-  
 
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        <PriceListPDFDocument
 
-  
 
-                  >
 
-  
+                          priceList={selectedPriceList}
 
-                    <span className="material-symbols-outlined text-base">
 
-  
 
-                      picture_as_pdf
+                          tableData={tableData}
 
-  
 
-                    </span>
 
-  
+                        />
 
-                    <span>Export PDF</span>
 
-  
 
-                  </button>
+                      }
+
+
+
+                      fileName={`${selectedPriceList.name}.pdf`}
+
+
+
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+
+
+
+                    >
+
+
+
+                      {({ loading }) => (
+
+
+
+                        <>
+
+
+
+                          <span className="material-symbols-outlined text-base">
+
+
+
+                            picture_as_pdf
+
+
+
+                          </span>
+
+
+
+                          <span>{loading ? "Generating..." : "Export PDF"}</span>
+
+
+
+                        </>
+
+
+
+                      )}
+
+
+
+                    </PDFDownloadLink>
+
+
+
+                  )}
 
   
 

@@ -5,6 +5,7 @@ import { z } from "zod";
 // ============================================================================
 
 export const OrderStatus = {
+  PENDING_APPROVAL: "pending_approval",
   PENDING: "pending",
   CONFIRMED: "confirmed",
   PROCESSING: "processing",
@@ -56,13 +57,14 @@ export const OrderSchema = z.object({
   price_list_id: z.string().min(1, "Price list ID is required"),
   price_list_name: z.string().min(1, "Price list name is required").max(255),
   status: z.enum([
+    "pending_approval",
     "pending",
     "confirmed",
     "processing",
     "shipped",
     "delivered",
     "cancelled",
-  ]).default("pending"),
+  ]).default("pending_approval"),
   order_date: z.string().min(1, "Order date is required"),
   delivery_start_date: z.string().min(1, "Delivery start date is required"), // From price list effective_date
   delivery_end_date: z.string().min(1, "Delivery end date is required"), // From price list expiry_date
@@ -243,6 +245,8 @@ export const generateOrderNumber = (date: Date = new Date()): string => {
  */
 export const getStatusColor = (status: OrderStatusType): string => {
   switch (status) {
+    case OrderStatus.PENDING_APPROVAL:
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
     case OrderStatus.PENDING:
       return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
     case OrderStatus.CONFIRMED:
@@ -264,5 +268,8 @@ export const getStatusColor = (status: OrderStatusType): string => {
  * Get status label
  */
 export const getStatusLabel = (status: OrderStatusType): string => {
+  if (status === OrderStatus.PENDING_APPROVAL) {
+    return "Pending Approval";
+  }
   return status.charAt(0).toUpperCase() + status.slice(1);
 };

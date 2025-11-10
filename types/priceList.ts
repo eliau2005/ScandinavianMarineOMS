@@ -6,6 +6,7 @@ import { z } from "zod";
 
 export const PriceListStatus = {
   DRAFT: "draft",
+  PENDING_APPROVAL: "pending_approval",
   ACTIVE: "active",
   ARCHIVED: "archived",
 } as const;
@@ -66,7 +67,7 @@ export const PriceListSchema = z.object({
   supplier_name: z.string().min(1, "Supplier name is required").max(255),
   effective_date: z.string().min(1, "Start date is required"), // ISO date string (delivery start)
   expiry_date: z.string().min(1, "End date is required"), // ISO date string (delivery end) - REQUIRED
-  status: z.enum(["draft", "active", "archived"]).default("draft"),
+  status: z.enum(["draft", "pending_approval", "active", "archived"]).default("draft"),
   notes: z.string().max(1000).optional().nullable(),
   is_default: z.boolean().default(false),
   created_by: z.string().min(1, "Creator ID is required"),

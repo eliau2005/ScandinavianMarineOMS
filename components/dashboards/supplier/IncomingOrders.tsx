@@ -5,6 +5,8 @@ import type { Order } from "../../../types/order";
 import { parseOrderItems, getStatusColor, getStatusLabel } from "../../../types/order";
 import { format } from "date-fns";
 import Modal from "../../common/Modal";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import OrderPDFDocument from "../../pdf/OrderPDFDocument";
 
 interface OrderStats {
   all: number;
@@ -47,7 +49,11 @@ const IncomingOrders = () => {
     try {
       const user = await account.get();
       const ordersData = await orderService.getBySupplier(user.$id);
-      setOrders(ordersData);
+      // Filter out orders with pending_approval status
+      const filteredOrders = ordersData.filter(
+        (order) => order.status !== "pending_approval"
+      );
+      setOrders(filteredOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
       showNotification("error", "Failed to load orders");
@@ -176,13 +182,31 @@ const IncomingOrders = () => {
       )}
 
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-          Incoming Orders
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          View and manage orders from your customers
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+            Incoming Orders
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            View and manage orders from your customers
+          </p>
+        </div>
+        {filteredOrders.length > 0 && (
+          <PDFDownloadLink
+            document={<OrderPDFDocument orders={filteredOrders} />}
+            fileName={`Supplier-Orders-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+          >
+            {({ loading }) => (
+              <>
+                <span className="material-symbols-outlined text-base">
+                  picture_as_pdf
+                </span>
+                <span>{loading ? "Generating..." : "Export Orders"}</span>
+              </>
+            )}
+          </PDFDownloadLink>
+        )}
       </div>
 
       {/* Status Filter Cards */}
@@ -340,6 +364,25 @@ const IncomingOrders = () => {
           wide
         >
           <div className="space-y-4">
+            {/* Export Button */}
+            {selectedOrder.status !== "pending_approval" && (
+              <div className="flex justify-end mb-4">
+                <PDFDownloadLink
+                  document={<OrderPDFDocument order={selectedOrder} />}
+                  fileName={`Order-${selectedOrder.order_number}.pdf`}
+                  className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+                >
+                  {({ loading }) => (
+                    <>
+                      <span className="material-symbols-outlined text-base">
+                        picture_as_pdf
+                      </span>
+                      <span>{loading ? "Generating..." : "Export PDF"}</span>
+                    </>
+                  )}
+                </PDFDownloadLink>
+              </div>
+            )}
             {/* Order Info */}
             <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
               <div>

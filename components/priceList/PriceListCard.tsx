@@ -25,6 +25,8 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "draft":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      case "pending_approval":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
       case "archived":
         return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
       default:
@@ -59,7 +61,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
                 priceList.status
               )}`}
             >
-              {priceList.status}
+              {priceList.status === "pending_approval" ? "Pending Approval" : priceList.status}
             </span>
             {priceList.is_default && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
