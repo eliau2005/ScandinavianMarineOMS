@@ -4,11 +4,14 @@ import UserManagement from "./admin/UserManagement";
 import SupplierCustomerAssociations from "./admin/SupplierCustomerAssociations";
 import OrdersOverview from "./admin/OrdersOverview";
 import AllPriceLists from "./admin/AllPriceLists";
+import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
 type AdminView = "dashboard" | "users" | "associations" | "orders" | "pricing";
 
 const AdminDashboard = () => {
   const [activeView, setActiveView] = useState<AdminView>("users");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -22,15 +25,19 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDrawerToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   const navLinks: { id: AdminView; label: string; disabled: boolean }[] = [
-    { id: "users", label: "Manage and create users", disabled: false },
+    { id: "users", label: "Users", disabled: false },
     {
       id: "associations",
-      label: "Associate suppliers with customers",
+      label: "Associations",
       disabled: false,
     },
-    { id: "orders", label: "Manage orders", disabled: false },
-    { id: "pricing", label: "Manage price lists", disabled: false },
+    { id: "orders", label: "Orders", disabled: false },
+    { id: "pricing", label: "Pricing", disabled: false },
   ];
 
   const renderContent = () => {
@@ -59,10 +66,41 @@ const AdminDashboard = () => {
     }
   };
 
+  const drawer = (
+    <div className="w-64 p-4">
+      <h2 className="text-lg font-semibold mb-4">Menu</h2>
+      <List>
+        {navLinks.map((link) => (
+          <ListItem key={link.id} disablePadding>
+            <ListItemButton
+              onClick={() => {
+                !link.disabled && setActiveView(link.id);
+                setMobileMenuOpen(false);
+              }}
+              disabled={link.disabled}
+              selected={activeView === link.id}
+            >
+              <ListItemText primary={link.label} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </div>
+  );
+
   return (
     <div className="flex h-screen flex-col bg-background-light dark:bg-background-dark font-display">
       <header className="flex h-16 w-full items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-6 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center">
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
           <span className="material-symbols-outlined text-3xl text-admin-accent mr-2">
             shield_person
           </span>
@@ -98,6 +136,13 @@ const AdminDashboard = () => {
           <span>Logout</span>
         </button>
       </header>
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={handleDrawerToggle}
+      >
+        {drawer}
+      </Drawer>
       <main className="flex flex-1 flex-col overflow-y-auto">
         {renderContent()}
       </main>

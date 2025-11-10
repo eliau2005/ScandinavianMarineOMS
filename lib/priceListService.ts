@@ -40,7 +40,7 @@ export const productCategoryService = {
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.PRODUCT_CATEGORIES,
-        [Query.orderAsc("display_order"), Query.equal("is_active", true)]
+        [Query.orderAsc("display_order")]
       );
       return response.documents as ProductCategory[];
     } catch (error) {
@@ -135,7 +135,7 @@ export const productService = {
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.PRODUCTS,
-        [Query.orderAsc("display_order"), Query.equal("is_active", true)]
+        [Query.orderAsc("display_order"), Query.limit(100)]
       );
       return response.documents as Product[];
     } catch (error) {
@@ -187,6 +187,7 @@ export const productService = {
    */
   async create(data: Omit<Product, "$id">): Promise<Product> {
     try {
+      console.log("Creating product with data:", data); // Debugging line
       const response = await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.PRODUCTS,

@@ -282,7 +282,7 @@ export const orderService = {
    * Create a new order
    */
   async create(
-    data: Omit<Order, "$id"> & { items: OrderItem[] }
+    data: Omit<Order, "$id" | "items"> & { items: OrderItem[] }
   ): Promise<Order> {
     try {
       // Calculate total
@@ -294,12 +294,22 @@ export const orderService = {
       // Generate order number if not provided
       const order_number = data.order_number || generateOrderNumber();
 
-      const orderData = {
-        ...data,
+      const orderData: Omit<Order, "$id"> = {
         order_number,
+        customer_id: data.customer_id,
+        customer_name: data.customer_name,
+        supplier_id: data.supplier_id,
+        supplier_name: data.supplier_name,
+        price_list_id: data.price_list_id,
+        price_list_name: data.price_list_name,
+        status: data.status,
+        order_date: data.order_date || new Date().toISOString(),
+        delivery_start_date: data.delivery_start_date,
+        delivery_end_date: data.delivery_end_date,
         items,
         total_amount,
-        order_date: data.order_date || new Date().toISOString(),
+        customer_notes: data.customer_notes,
+        currency: data.currency,
       };
 
       const response = await databases.createDocument(

@@ -43,38 +43,17 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Support multiple formats:
-        // 1. Simple: "Product Name"
-        // 2. With attributes: "Product Name | Trim A | 1000/1400 | SCALED | PBI"
-        // 3. CSV: Product Name,Trim A,1000/1400,SCALED,PBI
-
-        const parts = line.includes("|")
-          ? line.split("|").map((p) => p.trim())
-          : line.split(",").map((p) => p.trim());
-
-        const [name, trim_type, size_range, skin_type, packaging_type, sku] =
-          parts;
+        // The new simplified format only cares about the name
+        const name = line.split("|")[0].split(",")[0].trim();
 
         if (!name) continue;
-
-        // Auto-generate base name (first word or before trim type)
-        const base_name = trim_type
-          ? name.split(trim_type)[0].trim()
-          : name.split(" ")[0];
 
         products.push({
           category_id: selectedCategory,
           name: name,
-          base_name: base_name || name,
-          trim_type: trim_type || null,
-          size_range: size_range || null,
-          weight_unit: "kg",
-          skin_type: skin_type || null,
-          packaging_type: packaging_type || null,
-          attributes: null,
+          unit_of_measure: "box", // Default unit
           display_order: i,
           is_active: true,
-          sku: sku || null,
         });
       }
 
@@ -139,7 +118,7 @@ Doversoles 2/300 GR,,,,,DOV-2-300`;
       title="Bulk Import Products"
       wide
     >
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
             <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
@@ -220,18 +199,6 @@ Doversoles 2/300 GR,,,,,DOV-2-300`;
                 >
                   <div className="font-medium text-gray-800 dark:text-gray-200">
                     {product.name}
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-400 mt-1 flex gap-3">
-                    {product.trim_type && (
-                      <span>Trim: {product.trim_type}</span>
-                    )}
-                    {product.size_range && (
-                      <span>Size: {product.size_range}</span>
-                    )}
-                    {product.skin_type && <span>Skin: {product.skin_type}</span>}
-                    {product.packaging_type && (
-                      <span>Pkg: {product.packaging_type}</span>
-                    )}
                   </div>
                 </div>
               ))}

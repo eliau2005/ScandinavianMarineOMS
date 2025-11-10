@@ -21,6 +21,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
     icon: editCategory?.icon || "",
     description: editCategory?.description || "",
     is_active: editCategory?.is_active ?? true,
+    enable_vac_pricing: editCategory?.enable_vac_pricing || false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
         icon: editCategory.icon || "",
         description: editCategory.description || "",
         is_active: editCategory.is_active,
+        enable_vac_pricing: editCategory.enable_vac_pricing || false,
       });
     }
   }, [editCategory]);
@@ -54,6 +56,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
         icon: formData.icon.trim() || undefined,
         description: formData.description.trim() || undefined,
         is_active: formData.is_active,
+        enable_vac_pricing: formData.enable_vac_pricing,
       });
 
       // Reset form
@@ -63,6 +66,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
         icon: "",
         description: "",
         is_active: true,
+        enable_vac_pricing: false,
       });
       onClose();
     } catch (err) {
@@ -80,6 +84,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
         icon: "",
         description: "",
         is_active: true,
+        enable_vac_pricing: false,
       });
       setError(null);
       onClose();
@@ -186,19 +191,34 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
           />
         </div>
 
-        {/* Active */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="is_active"
-            checked={formData.is_active}
-            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-            className="w-4 h-4 text-supplier-accent bg-gray-100 border-gray-300 rounded focus:ring-supplier-accent focus:ring-2"
-            disabled={loading}
-          />
-          <label htmlFor="is_active" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Active
-          </label>
+        {/* Toggles */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_active"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="w-4 h-4 text-supplier-accent bg-gray-100 border-gray-300 rounded focus:ring-supplier-accent focus:ring-2"
+              disabled={loading}
+            />
+            <label htmlFor="is_active" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Active
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="enable_vac_pricing"
+              checked={formData.enable_vac_pricing}
+              onChange={(e) => setFormData({ ...formData, enable_vac_pricing: e.target.checked })}
+              className="w-4 h-4 text-supplier-accent bg-gray-100 border-gray-300 rounded focus:ring-supplier-accent focus:ring-2"
+              disabled={loading}
+            />
+            <label htmlFor="enable_vac_pricing" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Enable VAC Pricing
+            </label>
+          </div>
         </div>
 
         {/* Actions */}

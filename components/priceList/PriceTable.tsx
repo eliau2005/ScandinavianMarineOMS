@@ -15,7 +15,6 @@ interface PriceTableProps {
   data: PriceListTableRow[];
   onPriceChange?: (productId: string, field: "price_box" | "price_box_vac", value: number) => void;
   editable?: boolean;
-  showVacPricing?: boolean;
   loading?: boolean;
 }
 
@@ -25,7 +24,6 @@ const PriceTable: React.FC<PriceTableProps> = ({
   data,
   onPriceChange,
   editable = false,
-  showVacPricing = true,
   loading = false,
 }) => {
   // Group data by category
@@ -33,7 +31,7 @@ const PriceTable: React.FC<PriceTableProps> = ({
     const groups = new Map<string, PriceListTableRow[]>();
 
     data.forEach((row) => {
-      const categoryId = row.category.$id || "uncategorized";
+      const categoryId = row.category?.$id || "uncategorized";
       if (!groups.has(categoryId)) {
         groups.set(categoryId, []);
       }
@@ -42,137 +40,11 @@ const PriceTable: React.FC<PriceTableProps> = ({
 
     return Array.from(groups.entries()).map(([categoryId, rows]) => ({
       categoryId,
-      categoryName: rows[0]?.category.name || "Uncategorized",
+      categoryName: rows[0]?.category?.name || "Uncategorized",
+      category: rows[0]?.category,
       rows,
     }));
   }, [data]);
-
-  const columns = useMemo(() => {
-    const baseColumns = [
-      columnHelper.accessor("product.name", {
-        id: "product_name",
-        header: "Product",
-        cell: (info) => (
-          <div className="max-w-md">
-            <p className="text-sm text-gray-800 dark:text-gray-200">
-              {info.getValue()}
-            </p>
-          </div>
-        ),
-      }),
-      columnHelper.accessor("price_box", {
-        id: "price_box",
-        header: "Price/Box",
-        cell: (info) => {
-          const value = info.getValue();
-          const productId = info.row.original.product.$id!;
-
-          if (editable && onPriceChange) {
-            return (
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={value || ""}
-                onChange={(e) =>
-                  onPriceChange(productId, "price_box", parseFloat(e.target.value) || 0)
-                }
-                className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-                placeholder="0.00"
-              />
-            );
-          }
-
-          return value !== null ? (
-            <span className="font-semibold text-gray-800 dark:text-gray-200">
-              € {value.toFixed(2)}
-            </span>
-          ) : (
-            <span className="text-gray-400 dark:text-gray-600">-</span>
-          );
-        },
-      }),
-    ];
-
-    if (showVacPricing) {
-      baseColumns.push(
-        columnHelper.accessor("price_box_vac", {
-          id: "price_box_vac",
-          header: "Price/Box (VAC)",
-          cell: (info) => {
-            const value = info.getValue();
-            const productId = info.row.original.product.$id!;
-            const surcharge = info.row.original.vac_surcharge;
-
-            if (editable && onPriceChange) {
-              return (
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={value || ""}
-                    onChange={(e) =>
-                      onPriceChange(
-                        productId,
-                        "price_box_vac",
-                        parseFloat(e.target.value) || 0
-                      )
-                    }
-                    className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-                    placeholder="0.00"
-                  />
-                  {surcharge && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      +€{surcharge.toFixed(2)}/kg
-                    </span>
-                  )}
-                </div>
-              );
-            }
-
-            return value !== null ? (
-              <div className="flex flex-col">
-                <span className="font-semibold text-gray-800 dark:text-gray-200">
-                  € {value.toFixed(2)}
-                </span>
-                {surcharge && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    +€{surcharge.toFixed(2)}/kg
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-gray-400 dark:text-gray-600">-</span>
-            );
-          },
-        })
-      );
-    }
-
-    baseColumns.push(
-      columnHelper.accessor("is_available", {
-        id: "availability",
-        header: "Status",
-        cell: (info) => {
-          const available = info.getValue();
-          return (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                available
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-              }`}
-            >
-              {available ? "Available" : "Unavailable"}
-            </span>
-          );
-        },
-      })
-    );
-
-    return baseColumns;
-  }, [editable, showVacPricing, onPriceChange]);
 
   if (loading) {
     return (
@@ -207,6 +79,135 @@ const PriceTable: React.FC<PriceTableProps> = ({
       {groupedByCategory.map((group) => {
         const CategoryTable = () => {
           const [sorting, setSorting] = React.useState<SortingState>([]);
+
+          const columns = useMemo(() => {
+            const showVacPricing = group.category?.enable_vac_pricing ?? false;
+
+            const baseColumns = [
+              columnHelper.accessor("product.name", {
+                id: "product_name",
+                header: "Product",
+                cell: (info) => (
+                  <div className="max-w-md">
+                    <p className="text-sm text-gray-800 dark:text-gray-200">
+                      {info.getValue()}
+                    </p>
+                  </div>
+                ),
+              }),
+              columnHelper.accessor("price_box", {
+                id: "price_box",
+                header: "Price/Box",
+                cell: (info) => {
+                  const value = info.getValue();
+                  const productId = info.row.original.product.$id!;
+
+                  if (editable && onPriceChange) {
+                    return (
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={value || ""}
+                        onChange={(e) =>
+                          onPriceChange(productId, "price_box", parseFloat(e.target.value) || 0)
+                        }
+                        className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                        placeholder="0.00"
+                      />
+                    );
+                  }
+
+                  return value !== null ? (
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">
+                      € {value.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 dark:text-gray-600">-</span>
+                  );
+                },
+              }),
+            ];
+
+            if (showVacPricing) {
+              baseColumns.push(
+                columnHelper.accessor("price_box_vac", {
+                  id: "price_box_vac",
+                  header: "Price/Box (VAC)",
+                  cell: (info) => {
+                    const value = info.getValue();
+                    const productId = info.row.original.product.$id!;
+                    const surcharge = info.row.original.vac_surcharge;
+
+                    if (editable && onPriceChange) {
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={value || ""}
+                            onChange={(e) =>
+                              onPriceChange(
+                                productId,
+                                "price_box_vac",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                            placeholder="0.00"
+                          />
+                          {surcharge && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              +€{surcharge.toFixed(2)}/kg
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return value !== null ? (
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">
+                          € {value.toFixed(2)}
+                        </span>
+                        {surcharge && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            +€{surcharge.toFixed(2)}/kg
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-600">-</span>
+                    );
+                  },
+                })
+              );
+            }
+
+            baseColumns.push(
+              columnHelper.accessor("is_available", {
+                id: "availability",
+                header: "Status",
+                cell: (info) => {
+                  const available = info.getValue();
+                  return (
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        available
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      }`}
+                    >
+                      {available ? "Available" : "Unavailable"}
+                    </span>
+                  );
+                },
+              })
+            );
+
+            return baseColumns;
+          }, [editable, onPriceChange, group.category]);
 
           const table = useReactTable({
             data: group.rows,
