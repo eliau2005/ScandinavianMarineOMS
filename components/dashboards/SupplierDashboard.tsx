@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { account } from "../../lib/appwrite";
 import PriceListManagement from "./supplier/PriceListManagement";
 import IncomingOrders from "./supplier/IncomingOrders";
+import ProductManagement from "./supplier/ProductManagement";
 
-type SupplierView = "orders" | "pricing";
+type SupplierView = "orders" | "pricing" | "products";
 
 const SupplierDashboard = () => {
-  const [activeView, setActiveView] = useState<SupplierView>("orders");
+  const [activeView, setActiveView] = useState<SupplierView>("products");
 
   const handleLogout = async () => {
     try {
@@ -19,18 +20,21 @@ const SupplierDashboard = () => {
   };
 
   const navLinks: { id: SupplierView; label: string; icon: string }[] = [
-    { id: "orders", label: "Incoming Orders", icon: "shopping_cart" },
+    { id: "products", label: "Product Management", icon: "inventory_2" },
     { id: "pricing", label: "Price List Management", icon: "receipt_long" },
+    { id: "orders", label: "Incoming Orders", icon: "shopping_cart" },
   ];
 
   const renderContent = () => {
     switch (activeView) {
+      case "products":
+        return <ProductManagement />;
       case "orders":
         return <IncomingOrders />;
       case "pricing":
         return <PriceListManagement />;
       default:
-        return <IncomingOrders />;
+        return <ProductManagement />;
     }
   };
 

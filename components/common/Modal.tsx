@@ -6,9 +6,10 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  wide?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, wide = false }) => {
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -32,7 +33,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md transform rounded-xl bg-white dark:bg-gray-800 text-left shadow-xl transition-all"
+        className={`relative w-full ${wide ? 'max-w-4xl' : 'max-w-md'} transform rounded-xl bg-white dark:bg-gray-800 text-left shadow-xl transition-all`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 p-4">
