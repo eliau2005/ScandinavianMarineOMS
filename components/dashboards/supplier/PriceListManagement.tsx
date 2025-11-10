@@ -12,7 +12,7 @@ import type {
   ProductWithCategory,
   PriceListWithItems,
 } from "../../../types/priceList";
-import PriceTable from "../../priceList/PriceTable";
+import PriceListProductTable from "../../priceList/PriceListProductTable";
 import PriceListCard from "../../priceList/PriceListCard";
 import CreatePriceListModal from "../../priceList/CreatePriceListModal";
 import ConfirmationDialog from "../../common/ConfirmationDialog";
@@ -317,111 +317,517 @@ const PriceListManagement = () => {
     </div>
   );
 
-  const renderEditView = () => (
-    <div className="flex flex-1 flex-col p-6">
-      <div className="mb-6">
-        <button
-          onClick={() => setView("list")}
-          className="flex items-center gap-1 text-sm text-supplier-accent hover:underline mb-4"
-        >
-          <span className="material-symbols-outlined text-base">
-            arrow_back
-          </span>
-          <span>Back to Price Lists</span>
-        </button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {selectedPriceList?.name}
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Edit prices for this list
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => selectedPriceList && exportPriceListToPDF(selectedPriceList, tableData)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <span className="material-symbols-outlined text-base">picture_as_pdf</span>
-              <span>Export PDF</span>
-            </button>
-            <button
-              onClick={handleSavePrices}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving && (
-                <span className="animate-spin material-symbols-outlined text-base">
-                  progress_activity
-                </span>
-              )}
-              <span>{saving ? "Saving..." : "Save Prices"}</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      const renderEditView = () => {
 
-      <PriceTable
-        data={tableData}
-        onPriceChange={handlePriceChange}
-        editable={true}
-        showVacPricing={true}
-        loading={loading}
-      />
-    </div>
-  );
+        const groupedProducts = tableData.reduce((acc, row) => {
 
-  const renderViewView = () => (
-    <div className="flex flex-1 flex-col p-6">
-      <div className="mb-6">
-        <button
-          onClick={() => setView("list")}
-          className="flex items-center gap-1 text-sm text-supplier-accent hover:underline mb-4"
-        >
-          <span className="material-symbols-outlined text-base">
-            arrow_back
-          </span>
-          <span>Back to Price Lists</span>
-        </button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              {selectedPriceList?.name}
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              View-only mode
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => selectedPriceList && exportPriceListToPDF(selectedPriceList, tableData)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <span className="material-symbols-outlined text-base">picture_as_pdf</span>
-              <span>Export PDF</span>
-            </button>
-            {selectedPriceList && selectedPriceList.status !== "archived" && (
+          const categoryId = row.category.$id!;
+
+          if (!acc[categoryId]) {
+
+            acc[categoryId] = {
+
+              name: row.category.name,
+
+              products: [],
+
+            };
+
+          }
+
+          acc[categoryId].products.push(row);
+
+          return acc;
+
+        }, {} as Record<string, { name: string; products: PriceListTableRow[] }>);
+
+    
+
+        const columns: Record<string, { name: string; products: PriceListTableRow[] }>[] = [{}, {}];
+
+        Object.entries(groupedProducts).forEach(([categoryId, group], index) => {
+
+          columns[index % 2][categoryId] = group;
+
+        });
+
+    
+
+        return (
+
+          <div className="flex flex-1 flex-col p-6">
+
+            <div className="mb-6">
+
               <button
-                onClick={() => setView("edit")}
-                className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
-              >
-                <span className="material-symbols-outlined text-base">edit</span>
-                <span>Edit Prices</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <PriceTable
-        data={tableData}
-        editable={false}
-        showVacPricing={true}
-        loading={loading}
-      />
-    </div>
-  );
+                onClick={() => setView("list")}
+
+                className="flex items-center gap-1 text-sm text-supplier-accent hover:underline mb-4"
+
+              >
+
+                <span className="material-symbols-outlined text-base">
+
+                  arrow_back
+
+                </span>
+
+                <span>Back to Price Lists</span>
+
+              </button>
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+
+                    {selectedPriceList?.name}
+
+                  </h2>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+
+                    Edit prices for this list
+
+                  </p>
+
+                </div>
+
+                <div className="flex items-center gap-2">
+
+                  <button
+
+                    onClick={() =>
+
+                      selectedPriceList &&
+
+                      exportPriceListToPDF(selectedPriceList, tableData)
+
+                    }
+
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+
+                  >
+
+                    <span className="material-symbols-outlined text-base">
+
+                      picture_as_pdf
+
+                    </span>
+
+                    <span>Export PDF</span>
+
+                  </button>
+
+                  <button
+
+                    onClick={handleSavePrices}
+
+                    disabled={saving}
+
+                    className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+
+                  >
+
+                    {saving && (
+
+                      <span className="animate-spin material-symbols-outlined text-base">
+
+                        progress_activity
+
+                      </span>
+
+                    )}
+
+                    <span>{saving ? "Saving..." : "Save Prices"}</span>
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+    
+
+            <div className="flex gap-6">
+
+              {columns.map((col, colIndex) => (
+
+                <div key={colIndex} className="w-1/2 space-y-6">
+
+                  {Object.entries(col).map(([categoryId, group]) => (
+
+                    <PriceListProductTable
+
+                      key={categoryId}
+
+                      categoryName={group.name}
+
+                      products={group.products}
+
+                      onPriceChange={handlePriceChange}
+
+                      editable={true}
+
+                    />
+
+                  ))}
+
+                </div>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        );
+
+      };
+
+  
+
+      const renderViewView = () => {
+
+  
+
+        const groupedProducts = tableData.reduce((acc, row) => {
+
+  
+
+          const categoryId = row.category.$id!;
+
+  
+
+          if (!acc[categoryId]) {
+
+  
+
+            acc[categoryId] = {
+
+  
+
+              name: row.category.name,
+
+  
+
+              products: [],
+
+  
+
+            };
+
+  
+
+          }
+
+  
+
+          acc[categoryId].products.push(row);
+
+  
+
+          return acc;
+
+  
+
+        }, {} as Record<string, { name: string; products: PriceListTableRow[] }>);
+
+  
+
+    
+
+  
+
+        const columns: Record<string, { name: string; products: PriceListTableRow[] }>[] = [{}, {}];
+
+  
+
+        Object.entries(groupedProducts).forEach(([categoryId, group], index) => {
+
+  
+
+          columns[index % 2][categoryId] = group;
+
+  
+
+        });
+
+  
+
+    
+
+  
+
+        return (
+
+  
+
+          <div className="flex flex-1 flex-col p-6">
+
+  
+
+            <div className="mb-6">
+
+  
+
+              <button
+
+  
+
+                onClick={() => setView("list")}
+
+  
+
+                className="flex items-center gap-1 text-sm text-supplier-accent hover:underline mb-4"
+
+  
+
+              >
+
+  
+
+                <span className="material-symbols-outlined text-base">
+
+  
+
+                  arrow_back
+
+  
+
+                </span>
+
+  
+
+                <span>Back to Price Lists</span>
+
+  
+
+              </button>
+
+  
+
+              <div className="flex items-center justify-between">
+
+  
+
+                <div>
+
+  
+
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+
+  
+
+                    {selectedPriceList?.name}
+
+  
+
+                  </h2>
+
+  
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+
+  
+
+                    View-only mode
+
+  
+
+                  </p>
+
+  
+
+                </div>
+
+  
+
+                <div className="flex items-center gap-2">
+
+  
+
+                  <button
+
+  
+
+                    onClick={() =>
+
+  
+
+                      selectedPriceList &&
+
+  
+
+                      exportPriceListToPDF(selectedPriceList, tableData)
+
+  
+
+                    }
+
+  
+
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+
+  
+
+                  >
+
+  
+
+                    <span className="material-symbols-outlined text-base">
+
+  
+
+                      picture_as_pdf
+
+  
+
+                    </span>
+
+  
+
+                    <span>Export PDF</span>
+
+  
+
+                  </button>
+
+  
+
+                  {selectedPriceList && selectedPriceList.status !== "archived" && (
+
+  
+
+                    <button
+
+  
+
+                      onClick={() => setView("edit")}
+
+  
+
+                      className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+
+  
+
+                    >
+
+  
+
+                      <span className="material-symbols-outlined text-base">
+
+  
+
+                        edit
+
+  
+
+                      </span>
+
+  
+
+                      <span>Edit Prices</span>
+
+  
+
+                    </button>
+
+  
+
+                  )}
+
+  
+
+                </div>
+
+  
+
+              </div>
+
+  
+
+            </div>
+
+  
+
+    
+
+  
+
+            <div className="flex gap-6">
+
+  
+
+              {columns.map((col, colIndex) => (
+
+  
+
+                <div key={colIndex} className="w-1/2 space-y-6">
+
+  
+
+                  {Object.entries(col).map(([categoryId, group]) => (
+
+  
+
+                    <PriceListProductTable
+
+  
+
+                      key={categoryId}
+
+  
+
+                      categoryName={group.name}
+
+  
+
+                      products={group.products}
+
+  
+
+                      onPriceChange={handlePriceChange}
+
+  
+
+                      editable={false}
+
+  
+
+                    />
+
+  
+
+                  ))}
+
+  
+
+                </div>
+
+  
+
+              ))}
+
+  
+
+            </div>
+
+  
+
+          </div>
+
+  
+
+        );
+
+  
+
+      };
 
   return (
     <>
