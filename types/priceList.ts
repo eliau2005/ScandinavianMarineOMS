@@ -10,24 +10,6 @@ export const PriceListStatus = {
   ARCHIVED: "archived",
 } as const;
 
-export const TrimType = {
-  A: "A",
-  B: "B",
-  D: "D",
-  E: "E",
-} as const;
-
-export const PackagingType = {
-  PBI: "PBI",
-  PBO: "PBO",
-  SUP: "SUP",
-} as const;
-
-export const WeightUnit = {
-  KG: "kg",
-  GR: "gr",
-} as const;
-
 export const Currency = {
   EUR: "EUR",
   USD: "USD",
@@ -42,6 +24,7 @@ export const Currency = {
 export const ProductCategorySchema = z.object({
   $id: z.string().optional(),
   name: z.string().min(1, "Category name is required").max(255),
+  enable_vac_pricing: z.boolean().default(false), // Controls VAC pricing columns for this category
   display_order: z.number().int().min(0).default(0),
   icon: z.string().max(100).optional(),
   description: z.string().max(500).optional(),
@@ -50,21 +33,27 @@ export const ProductCategorySchema = z.object({
   $updatedAt: z.string().optional(),
 });
 
-// Product Schema
+// Product Schema (Simplified)
 export const ProductSchema = z.object({
   $id: z.string().optional(),
   category_id: z.string().min(1, "Category is required"),
-  name: z.string().min(1, "Product name is required").max(255),
-  base_name: z.string().min(1, "Base name is required").max(255),
-  trim_type: z.string().max(50).optional().nullable(),
-  size_range: z.string().max(100).optional().nullable(),
-  weight_unit: z.enum(["kg", "gr"]).default("kg"),
-  skin_type: z.string().max(100).optional().nullable(),
-  packaging_type: z.string().max(50).optional().nullable(),
-  attributes: z.string().max(500).optional().nullable(), // JSON string
+  name: z.string().min(1, "Product name is required").max(255), // Fish name only
+  unit_of_measure: z.string().min(1, "Unit of measure is required").max(50).default("box"), // Custom units
   display_order: z.number().int().min(0).default(0),
   is_active: z.boolean().default(true),
-  sku: z.string().max(100).optional().nullable(),
+  $createdAt: z.string().optional(),
+  $updatedAt: z.string().optional(),
+});
+
+// Unit of Measure Schema
+export const UnitOfMeasureSchema = z.object({
+  $id: z.string().optional(),
+  supplier_id: z.string().min(1, "Supplier ID is required"),
+  supplier_name: z.string().min(1, "Supplier name is required").max(255),
+  unit_name: z.string().min(1, "Unit name is required").max(50),
+  is_default: z.boolean().default(false), // kg is default
+  display_order: z.number().int().min(0).default(0),
+  is_active: z.boolean().default(true),
   $createdAt: z.string().optional(),
   $updatedAt: z.string().optional(),
 });
@@ -72,11 +61,11 @@ export const ProductSchema = z.object({
 // Price List Schema
 export const PriceListSchema = z.object({
   $id: z.string().optional(),
-  name: z.string().min(1, "Price list name is required").max(255),
+  name: z.string().min(1, "Price list name is required").max(255), // Auto-generated from dates
   supplier_id: z.string().min(1, "Supplier ID is required"),
   supplier_name: z.string().min(1, "Supplier name is required").max(255),
-  effective_date: z.string().min(1, "Effective date is required"), // ISO date string
-  expiry_date: z.string().optional().nullable(),
+  effective_date: z.string().min(1, "Start date is required"), // ISO date string (delivery start)
+  expiry_date: z.string().min(1, "End date is required"), // ISO date string (delivery end) - REQUIRED
   status: z.enum(["draft", "active", "archived"]).default("draft"),
   notes: z.string().max(1000).optional().nullable(),
   is_default: z.boolean().default(false),
@@ -108,6 +97,7 @@ export const PriceListItemSchema = z.object({
 
 export type ProductCategory = z.infer<typeof ProductCategorySchema>;
 export type Product = z.infer<typeof ProductSchema>;
+export type UnitOfMeasure = z.infer<typeof UnitOfMeasureSchema>;
 export type PriceList = z.infer<typeof PriceListSchema>;
 export type PriceListItem = z.infer<typeof PriceListItemSchema>;
 
@@ -139,6 +129,9 @@ export type ProductCategoryFormData = z.infer<typeof ProductCategorySchema>;
 
 // Form data for creating/editing a product
 export type ProductFormData = z.infer<typeof ProductSchema>;
+
+// Form data for creating/editing a unit of measure
+export type UnitOfMeasureFormData = z.infer<typeof UnitOfMeasureSchema>;
 
 // Form data for creating/editing a price list
 export type PriceListFormData = z.infer<typeof PriceListSchema>;
@@ -198,10 +191,48 @@ export const validateProduct = (data: unknown): Product => {
   return ProductSchema.parse(data);
 };
 
+export const validateUnitOfMeasure = (data: unknown): UnitOfMeasure => {
+  return UnitOfMeasureSchema.parse(data);
+};
+
 export const validatePriceList = (data: unknown): PriceList => {
   return PriceListSchema.parse(data);
 };
 
 export const validatePriceListItem = (data: unknown): PriceListItem => {
   return PriceListItemSchema.parse(data);
+};
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Generate price list name from start and end dates
+ * Format: "PRICES ETA TUE/WED 12-11-2025"
+ * @param startDate - ISO date string for delivery start
+ * @param endDate - ISO date string for delivery end
+ * @returns Formatted price list name
+ */
+export const generatePriceListName = (startDate: string, endDate: string): string => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Get day names (short form: MON, TUE, WED, etc.)
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const startDay = dayNames[start.getDay()];
+  const endDay = dayNames[end.getDay()];
+
+  // Format date as DD-MM-YYYY
+  const formatDate = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Use the end date for the date part
+  const formattedDate = formatDate(end);
+
+  return `PRICES ETA ${startDay}/${endDay} ${formattedDate}`;
 };

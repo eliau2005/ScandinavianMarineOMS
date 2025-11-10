@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { account } from "../../../lib/appwrite";
 import { associationService, orderService } from "../../../lib/orderService";
 import { priceListService } from "../../../lib/priceListService";
@@ -24,7 +25,6 @@ const PlaceOrder = () => {
   const [selectedPriceList, setSelectedPriceList] = useState<string>("");
   const [products, setProducts] = useState<PriceListTableRow[]>([]);
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
-  const [deliveryDate, setDeliveryDate] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
@@ -142,11 +142,6 @@ const PlaceOrder = () => {
       return;
     }
 
-    if (!deliveryDate) {
-      showNotification("error", "Please select a delivery date");
-      return;
-    }
-
     setPlacing(true);
     try {
       const supplier = suppliers.find((s) => s.id === selectedSupplier);
@@ -157,13 +152,24 @@ const PlaceOrder = () => {
         return;
       }
 
-      const orderItems: OrderItem[] = Array.from(cart.values()).map((item) => ({
-        product_id: item.product_id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total: item.quantity * item.unit_price,
-      }));
+      if (!priceList.expiry_date) {
+        showNotification("error", "Price list must have delivery dates");
+        return;
+      }
+
+      const orderItems: OrderItem[] = Array.from(cart.values()).map((item) => {
+        // Find the product to get category information
+        const product = products.find(p => p.product.$id === item.product_id);
+        return {
+          product_id: item.product_id,
+          product_name: item.product_name,
+          category_id: product?.category.$id,
+          category_name: product?.category.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.quantity * item.unit_price,
+        };
+      });
 
       await orderService.create({
         order_number: generateOrderNumber(),
@@ -175,7 +181,8 @@ const PlaceOrder = () => {
         price_list_name: priceList.name,
         status: "pending",
         order_date: new Date().toISOString(),
-        requested_delivery_date: new Date(deliveryDate).toISOString(),
+        delivery_start_date: priceList.effective_date,
+        delivery_end_date: priceList.expiry_date,
         items: orderItems,
         customer_notes: notes || null,
         currency: "EUR",
@@ -186,7 +193,6 @@ const PlaceOrder = () => {
 
       // Reset form
       setCart(new Map());
-      setDeliveryDate("");
       setNotes("");
       setSelectedPriceList("");
       setProducts([]);
@@ -325,12 +331,9 @@ const PlaceOrder = () => {
                     Products
                   </h3>
                 </div>
-                <div className="p-4 max-h-[600px] overflow-y-auto">
+                <div className="p-4 max-h-[600px] overflow-y-auto space-y-6">
                   {Object.entries(groupedProducts).map(([categoryName, categoryProducts]) => (
-                    <div key={categoryName} className="mb-6 last:mb-0">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">
-                        {categoryName}
-                      </h4>
+                    <div key={categoryName}>
                       <div className="space-y-2">
                         {categoryProducts.map((product) => {
                           const cartItem = cart.get(product.product.$id!);
@@ -346,7 +349,7 @@ const PlaceOrder = () => {
                                   {product.product.name}
                                 </p>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  € {product.price_box?.toFixed(2)} / {product.product.weight_unit}
+                                  € {product.price_box?.toFixed(2)} / {product.product.unit_of_measure}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
@@ -445,19 +448,20 @@ const PlaceOrder = () => {
                       ))}
                     </div>
 
-                    {/* Delivery Date */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Delivery Date
-                      </label>
-                      <input
-                        type="date"
-                        value={deliveryDate}
-                        onChange={(e) => setDeliveryDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-customer-accent"
-                        min={new Date().toISOString().split("T")[0]}
-                      />
-                    </div>
+                    {/* Delivery Window (from price list) */}
+                    {selectedPriceList && priceLists.find(pl => pl.$id === selectedPriceList) && (
+                      <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
+                          Delivery Window (ETA)
+                        </p>
+                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                          {format(new Date(priceLists.find(pl => pl.$id === selectedPriceList)!.effective_date), "EEE dd-MM-yyyy")} - {format(new Date(priceLists.find(pl => pl.$id === selectedPriceList)!.expiry_date!), "EEE dd-MM-yyyy")}
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                          This order will be delivered within this time window
+                        </p>
+                      </div>
+                    )}
 
                     {/* Notes */}
                     <div className="mb-4">
@@ -485,7 +489,7 @@ const PlaceOrder = () => {
                       </div>
                       <button
                         onClick={handlePlaceOrder}
-                        disabled={placing || !deliveryDate}
+                        disabled={placing}
                         className="w-full px-4 py-3 bg-customer-accent text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {placing && (

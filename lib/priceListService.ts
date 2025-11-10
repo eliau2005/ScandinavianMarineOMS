@@ -355,6 +355,68 @@ export const priceListService = {
   },
 
   /**
+   * Activate a price list (set status to 'active')
+   * - Validates that all active products have prices
+   * - Automatically archives any currently active price list for this supplier
+   * - Only one price list can be active at a time per supplier
+   */
+  async activate(id: string): Promise<PriceList> {
+    try {
+      // Get the price list being activated
+      const priceList = await this.getById(id);
+
+      // Get all items in this price list
+      const items = await priceListItemService.getByPriceList(id);
+
+      // Get all active products
+      const allProducts = await productService.getAll();
+      const activeProducts = allProducts.filter((p) => p.is_active);
+
+      // Check if all active products have prices in this price list
+      const productsWithPrices = new Set(items.map((item) => item.product_id));
+      const productsWithoutPrices = activeProducts.filter(
+        (product) => !productsWithPrices.has(product.$id!)
+      );
+
+      if (productsWithoutPrices.length > 0) {
+        const productNames = productsWithoutPrices
+          .slice(0, 3)
+          .map((p) => p.name)
+          .join(", ");
+        const moreCount = productsWithoutPrices.length - 3;
+        const errorMsg =
+          productsWithoutPrices.length <= 3
+            ? `Cannot activate price list. The following active products do not have prices: ${productNames}`
+            : `Cannot activate price list. ${productsWithoutPrices.length} active products do not have prices (${productNames}${moreCount > 0 ? ` and ${moreCount} more` : ""})`;
+        throw new Error(errorMsg);
+      }
+
+      // Archive any currently active price lists for this supplier
+      const activePriceLists = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PRICE_LISTS,
+        [
+          Query.equal("supplier_id", priceList.supplier_id),
+          Query.equal("status", "active"),
+        ]
+      );
+
+      // Archive all currently active price lists
+      await Promise.all(
+        activePriceLists.documents.map((activeList) =>
+          this.update(activeList.$id, { status: "archived" })
+        )
+      );
+
+      // Activate the new price list
+      return await this.update(id, { status: "active" });
+    } catch (error) {
+      console.error("Error activating price list:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Delete a price list
    */
   async delete(id: string): Promise<void> {
@@ -416,11 +478,15 @@ export const priceListService = {
    */
   async duplicate(
     id: string,
-    newName: string,
-    newEffectiveDate: string
+    newEffectiveDate: string,
+    newExpiryDate: string
   ): Promise<PriceList> {
     try {
       const original = await this.getWithItems(id);
+
+      // Auto-generate name from dates
+      const { generatePriceListName } = await import("../types/priceList");
+      const newName = generatePriceListName(newEffectiveDate, newExpiryDate);
 
       // Create new price list
       const newPriceList = await this.create({
@@ -428,7 +494,7 @@ export const priceListService = {
         supplier_id: original.supplier_id,
         supplier_name: original.supplier_name,
         effective_date: newEffectiveDate,
-        expiry_date: original.expiry_date,
+        expiry_date: newExpiryDate,
         status: "draft",
         notes: original.notes,
         is_default: false,
@@ -587,3 +653,6 @@ export const priceListItemService = {
     }
   },
 };
+
+// Export unit of measure service
+export { unitOfMeasureService } from "./unitOfMeasureService";

@@ -75,11 +75,10 @@ export const exportPriceListToPDF = (
       currentY = 15;
     }
 
-    // Category Header
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text(categoryName.toUpperCase(), margin, currentY);
-    currentY += 5;
+    // Add spacing between categories (no title header)
+    if (index > 0) {
+      currentY += 3; // Extra spacing between category tables
+    }
 
     // Prepare table data for this category
     const hasVacPricing = items.some((item) => item.price_box_vac !== null);
@@ -194,52 +193,80 @@ export const exportSimplePriceListToPDF = (
   );
   doc.text(priceList.supplier_name, pageWidth / 2, 32, { align: "center" });
 
-  // Prepare table data
+  // Organize data by category
+  const categorizedData: { [categoryName: string]: PriceListTableRow[] } = {};
+  tableData.forEach((row) => {
+    const categoryName = row.category?.name || "Uncategorized";
+    if (!categorizedData[categoryName]) {
+      categorizedData[categoryName] = [];
+    }
+    categorizedData[categoryName].push(row);
+  });
+
+  let currentY = 40;
   const hasVacPricing = tableData.some((item) => item.price_box_vac !== null);
 
-  const tableHeaders = ["Category", "Product", "Price/Box"];
-  if (hasVacPricing) {
-    tableHeaders.push("Price/Box (VAC)");
-  }
+  Object.entries(categorizedData).forEach(([categoryName, items], index) => {
+    // Check if we need a new page
+    if (currentY > pageHeight - 40) {
+      doc.addPage();
+      currentY = 15;
+    }
 
-  const tableRows = tableData
-    .filter((item) => item.price_box !== null || item.price_box_vac !== null)
-    .map((item) => {
-      const row = [
-        item.category?.name || "N/A",
-        item.product.name,
-        item.price_box ? `€ ${item.price_box.toFixed(2)}` : "-",
-      ];
-      if (hasVacPricing) {
-        row.push(
-          item.price_box_vac ? `€ ${item.price_box_vac.toFixed(2)}` : "-"
-        );
-      }
-      return row;
+    // Add spacing between categories (no title header)
+    if (index > 0) {
+      currentY += 5;
+    }
+
+    const tableHeaders = ["Product", "Price/Box"];
+    if (hasVacPricing) {
+      tableHeaders.push("Price/Box (VAC)");
+    }
+
+    const tableRows = items
+      .filter((item) => item.price_box !== null || item.price_box_vac !== null)
+      .map((item) => {
+        const row = [
+          item.product.name,
+          item.price_box ? `€ ${item.price_box.toFixed(2)}` : "-",
+        ];
+        if (hasVacPricing) {
+          row.push(
+            item.price_box_vac ? `€ ${item.price_box_vac.toFixed(2)}` : "-"
+          );
+        }
+        return row;
+      });
+
+    // Skip empty categories
+    if (tableRows.length === 0) {
+      return;
+    }
+
+    // Create table for this category
+    autoTable(doc, {
+      startY: currentY,
+      head: [tableHeaders],
+      body: tableRows,
+      theme: "striped",
+      styles: {
+        fontSize: 9,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [59, 130, 246], // Blue
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+      columnStyles: {
+        0: { cellWidth: hasVacPricing ? 100 : 130 },
+        1: { cellWidth: 30, halign: "right" },
+        2: hasVacPricing ? { cellWidth: 35, halign: "right" } : undefined,
+      },
+      margin: { left: margin, right: margin },
     });
 
-  // Create table
-  autoTable(doc, {
-    startY: 40,
-    head: [tableHeaders],
-    body: tableRows,
-    theme: "striped",
-    styles: {
-      fontSize: 9,
-      cellPadding: 2,
-    },
-    headStyles: {
-      fillColor: [59, 130, 246], // Blue
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-    },
-    columnStyles: {
-      0: { cellWidth: 30 },
-      1: { cellWidth: hasVacPricing ? 80 : 110 },
-      2: { cellWidth: 30, halign: "right" },
-      3: hasVacPricing ? { cellWidth: 35, halign: "right" } : undefined,
-    },
-    margin: { left: margin, right: margin },
+    currentY = (doc as any).lastAutoTable.finalY + 3;
   });
 
   // Footer

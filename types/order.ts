@@ -37,6 +37,8 @@ export const CustomerSupplierAssociationSchema = z.object({
 export const OrderItemSchema = z.object({
   product_id: z.string().min(1),
   product_name: z.string().min(1),
+  category_id: z.string().optional(), // Category at time of order
+  category_name: z.string().optional(), // Category name at time of order
   quantity: z.number().min(0.01),
   unit_price: z.number().min(0),
   total: z.number().min(0),
@@ -62,7 +64,8 @@ export const OrderSchema = z.object({
     "cancelled",
   ]).default("pending"),
   order_date: z.string().min(1, "Order date is required"),
-  requested_delivery_date: z.string().optional().nullable(),
+  delivery_start_date: z.string().min(1, "Delivery start date is required"), // From price list effective_date
+  delivery_end_date: z.string().min(1, "Delivery end date is required"), // From price list expiry_date
   total_amount: z.number().min(0).default(0),
   currency: z.string().max(10).default("EUR"),
   items: z.string().min(1, "Order must have items"), // JSON string

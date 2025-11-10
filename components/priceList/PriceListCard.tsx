@@ -113,7 +113,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
               <span>View</span>
             </button>
           )}
-          {onEdit && priceList.status !== "archived" && (
+          {onEdit && priceList.status === "draft" && (
             <button
               onClick={onEdit}
               className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"

@@ -216,3 +216,108 @@ The application is configured for continuous deployment on **Vercel**. Key confi
 -   **Lines Added**: 6,863 lines
 -   **Ready for Production**: Yes (after Appwrite setup)
 
+## 15. Simplified Product System & Business Logic Updates
+-   **Objective**: Simplify the product management system and implement strict business logic for price list activation and delivery dates.
+-   **Actions Taken**:
+
+### Product System Simplification:
+-   **Removed Complex Fields**: Eliminated 8 unnecessary fields from products (base_name, trim_type, size_range, skin_type, packaging_type, attributes, sku, weight_unit)
+-   **Simplified Product Schema**: Products now only have: name (fish name) and unit_of_measure
+-   **Category Role Change**: Categories now only control VAC pricing (enable_vac_pricing field) and group products into separate tables
+-   **Units of Measure System**:
+    -   Created new `units_of_measure` collection for customizable units per supplier
+    -   Default unit is "box" (auto-created if none exists)
+    -   Suppliers can add custom units (kg, piece, etc.)
+    -   Implemented `lib/unitOfMeasureService.ts` for CRUD operations
+    -   Created `CreateUnitModal.tsx` for adding custom units
+-   **Updated Components**:
+    -   Rewrote `CreateProductModal.tsx` (reduced from 370 to 250 lines)
+    -   Updated `ProductManagement.tsx` to load and display units
+    -   Changed product table from SKU column to Unit column
+
+### Price List Business Logic:
+-   **Auto-Generated Names**:
+    -   Price list names now auto-generated from dates: "PRICES ETA TUE/WED 12-11-2025"
+    -   Format: start day/end day + end date
+    -   Removed manual name input from `CreatePriceListModal.tsx`
+    -   Added `generatePriceListName()` utility function
+-   **Mandatory Expiry Dates**:
+    -   Changed `expiry_date` from optional to required in `PriceListSchema`
+    -   Represents delivery window end date
+-   **Single Active Price List Rule**:
+    -   Only ONE active price list per supplier at a time
+    -   Created `priceListService.activate()` method with validation:
+        - Checks all active products have prices before activation
+        - Auto-archives currently active price list
+        - Throws descriptive error if products missing prices
+    -   Draft price lists are fully editable (including dates)
+    -   Active/archived price lists cannot have dates edited
+    -   Updated `PriceListCard.tsx` to show Edit button only for draft status
+    -   Created `PRICE_LIST_ACTIVATION_RULES.md` documentation (238 lines)
+
+### Order System Updates:
+-   **Delivery Date Changes**:
+    -   Customers no longer choose delivery dates
+    -   Delivery window determined by price list's `effective_date` (start) and `expiry_date` (end)
+    -   Replaced `requested_delivery_date` with `delivery_start_date` and `delivery_end_date` in Order schema
+    -   Updated `PlaceOrder.tsx` to remove date picker and display delivery window from price list
+    -   Orders now inherit delivery dates from selected price list
+
+### Category Separation System-Wide:
+-   **Objective**: Display products grouped by category everywhere in the app, separated by spacing without title headers
+-   **Order Item Schema Enhanced**:
+    -   Added `category_id` and `category_name` fields to `OrderItemSchema`
+    -   Orders now preserve category information at time of placement
+-   **Components Updated**:
+    -   `PriceTable.tsx`: Removed Category column, each category renders as separate table
+    -   `PlaceOrder.tsx`: Removed category title headers, kept spacing between groups
+    -   `OrderHistory.tsx`: Order items grouped by category in modal
+    -   `IncomingOrders.tsx`: Order items grouped by category in modal
+    -   `OrdersOverview.tsx`: Admin order details show items grouped by category
+-   **PDF Export Updates**:
+    -   `exportPriceListToPDF()`: Removed category title headers, kept spacing between tables
+    -   `exportSimplePriceListToPDF()`: Completely refactored to group by category with separate tables instead of column-based categories
+
+### Database Changes:
+-   **New Collection**: `units_of_measure` (6 attributes)
+-   **Modified Collections**:
+    -   `product_categories`: Added `enable_vac_pricing` (Boolean)
+    -   `products`: Added `unit_of_measure` (String), removed 8 deprecated fields
+    -   `price_lists`: Made `expiry_date` required
+    -   `orders`: Added `delivery_start_date` and `delivery_end_date`, removed `requested_delivery_date`
+-   **Total Changes**: 1 new collection, 4 attributes added, 9 attributes removed, 1 requirement changed
+
+### Documentation Created:
+-   **PRODUCT_SYSTEM_UPDATE_DATABASE_SETUP.md**: Step-by-step database migration guide (338 lines)
+-   **PRICE_LIST_ACTIVATION_RULES.md**: Business logic and workflow documentation (238 lines)
+
+### Files Modified in This Update:
+-   `types/priceList.ts`: Simplified schemas, added generatePriceListName()
+-   `types/order.ts`: Updated delivery date fields, enhanced OrderItem schema
+-   `lib/unitOfMeasureService.ts`: NEW - Complete CRUD service
+-   `lib/priceListService.ts`: Added activate() method with validation
+-   `lib/pdfExport.ts`: Updated both export functions for category grouping
+-   `lib/appwrite.ts`: Added units collection ID
+-   `components/priceList/CreateProductModal.tsx`: Complete rewrite (simplified)
+-   `components/priceList/CreatePriceListModal.tsx`: Auto-generate names
+-   `components/priceList/CreateUnitModal.tsx`: NEW component
+-   `components/priceList/PriceListCard.tsx`: Edit button only for drafts
+-   `components/priceList/PriceTable.tsx`: Category grouping with separate tables
+-   `components/dashboards/customer/PlaceOrder.tsx`: Removed date picker, added delivery window, category grouping
+-   `components/dashboards/customer/OrderHistory.tsx`: Category-grouped items
+-   `components/dashboards/supplier/ProductManagement.tsx`: Load units, category grouping
+-   `components/dashboards/supplier/PriceListManagement.tsx`: Use activate method
+-   `components/dashboards/supplier/IncomingOrders.tsx`: Category-grouped items
+-   `components/dashboards/admin/OrdersOverview.tsx`: Category-grouped items
+
+### Key Improvements:
+-   ✅ Simplified product management - focus on core data only
+-   ✅ Flexible units of measure system per supplier
+-   ✅ Consistent price list naming based on delivery dates
+-   ✅ Strict business rules prevent incomplete price lists from activation
+-   ✅ Single source of truth for current pricing (one active list)
+-   ✅ Delivery dates controlled by supplier via price lists
+-   ✅ Category-based grouping throughout entire application
+-   ✅ Clean visual separation without redundant headers
+-   ✅ Preserved category information in order history
+

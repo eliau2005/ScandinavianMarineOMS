@@ -157,9 +157,20 @@ const PriceListManagement = () => {
 
   const handleDuplicatePriceList = async (priceList: PriceList) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const newName = `${priceList.name} (Copy)`;
-      await priceListService.duplicate(priceList.$id!, newName, today);
+      // Add 7 days to both start and end dates to preserve delivery window duration
+      const originalStart = new Date(priceList.effective_date);
+      const originalEnd = new Date(priceList.expiry_date!);
+
+      const newStart = new Date(originalStart);
+      newStart.setDate(newStart.getDate() + 7);
+
+      const newEnd = new Date(originalEnd);
+      newEnd.setDate(newEnd.getDate() + 7);
+
+      const newStartStr = newStart.toISOString().split("T")[0];
+      const newEndStr = newEnd.toISOString().split("T")[0];
+
+      await priceListService.duplicate(priceList.$id!, newStartStr, newEndStr);
       await loadPriceLists();
       showNotification("success", "Price list duplicated successfully");
     } catch (error) {
@@ -170,12 +181,17 @@ const PriceListManagement = () => {
 
   const handleSetActive = async (priceList: PriceList) => {
     try {
-      await priceListService.update(priceList.$id!, { status: "active" });
+      await priceListService.activate(priceList.$id!);
       await loadPriceLists();
-      showNotification("success", "Price list activated successfully");
+      showNotification(
+        "success",
+        "Price list activated successfully. Any previously active price list has been archived."
+      );
     } catch (error) {
       console.error("Error activating price list:", error);
-      showNotification("error", "Failed to activate price list");
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to activate price list";
+      showNotification("error", errorMessage);
     }
   };
 

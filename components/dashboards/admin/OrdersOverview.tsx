@@ -425,25 +425,44 @@ const OrdersOverview = () => {
               <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
                 Order Items
               </h4>
-              <div className="space-y-2">
-                {parseOrderItems(selectedOrder.items).map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {item.product_name}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {item.quantity} × € {item.unit_price.toFixed(2)}
-                      </p>
+              <div className="space-y-6">
+                {(() => {
+                  // Group items by category
+                  const items = parseOrderItems(selectedOrder.items);
+                  const grouped = items.reduce((acc, item) => {
+                    const categoryName = item.category_name || "Other";
+                    if (!acc[categoryName]) {
+                      acc[categoryName] = [];
+                    }
+                    acc[categoryName].push(item);
+                    return acc;
+                  }, {} as Record<string, typeof items>);
+
+                  return Object.entries(grouped).map(([categoryName, categoryItems]) => (
+                    <div key={categoryName}>
+                      <div className="space-y-2">
+                        {categoryItems.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                {item.product_name}
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {item.quantity} × € {item.unit_price.toFixed(2)}
+                              </p>
+                            </div>
+                            <p className="font-semibold text-gray-800 dark:text-gray-200">
+                              € {item.total.toFixed(2)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">
-                      € {item.total.toFixed(2)}
-                    </p>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
 

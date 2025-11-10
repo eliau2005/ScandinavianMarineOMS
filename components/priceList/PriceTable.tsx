@@ -28,20 +28,27 @@ const PriceTable: React.FC<PriceTableProps> = ({
   showVacPricing = true,
   loading = false,
 }) => {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  // Group data by category
+  const groupedByCategory = useMemo(() => {
+    const groups = new Map<string, PriceListTableRow[]>();
+
+    data.forEach((row) => {
+      const categoryId = row.category.$id || "uncategorized";
+      if (!groups.has(categoryId)) {
+        groups.set(categoryId, []);
+      }
+      groups.get(categoryId)!.push(row);
+    });
+
+    return Array.from(groups.entries()).map(([categoryId, rows]) => ({
+      categoryId,
+      categoryName: rows[0]?.category.name || "Uncategorized",
+      rows,
+    }));
+  }, [data]);
 
   const columns = useMemo(() => {
     const baseColumns = [
-      columnHelper.accessor("category.name", {
-        id: "category",
-        header: "Category",
-        cell: (info) => (
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            {info.getValue() || "N/A"}
-          </span>
-        ),
-      }),
       columnHelper.accessor("product.name", {
         id: "product_name",
         header: "Product",
@@ -50,11 +57,6 @@ const PriceTable: React.FC<PriceTableProps> = ({
             <p className="text-sm text-gray-800 dark:text-gray-200">
               {info.getValue()}
             </p>
-            {info.row.original.product.sku && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                SKU: {info.row.original.product.sku}
-              </p>
-            )}
           </div>
         ),
       }),
@@ -172,20 +174,6 @@ const PriceTable: React.FC<PriceTableProps> = ({
     return baseColumns;
   }, [editable, showVacPricing, onPriceChange]);
 
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  });
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg">
@@ -213,56 +201,80 @@ const PriceTable: React.FC<PriceTableProps> = ({
     );
   }
 
+  // Render a separate table for each category
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <div className="flex items-center gap-2">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {header.column.getIsSorted() && (
-                        <span className="material-symbols-outlined text-sm">
-                          {header.column.getIsSorted() === "asc"
-                            ? "arrow_upward"
-                            : "arrow_downward"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="space-y-6">
+      {groupedByCategory.map((group) => {
+        const CategoryTable = () => {
+          const [sorting, setSorting] = React.useState<SortingState>([]);
+
+          const table = useReactTable({
+            data: group.rows,
+            columns,
+            state: {
+              sorting,
+            },
+            onSortingChange: setSorting,
+            getCoreRowModel: getCoreRowModel(),
+            getSortedRowModel: getSortedRowModel(),
+          });
+
+          return (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            <div className="flex items-center gap-2">
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                              {header.column.getIsSorted() && (
+                                <span className="material-symbols-outlined text-sm">
+                                  {header.column.getIsSorted() === "asc"
+                                    ? "arrow_upward"
+                                    : "arrow_downward"}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {table.getRowModel().rows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        };
+
+        return <CategoryTable key={group.categoryId} />;
+      })}
     </div>
   );
 };

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { account } from "../../../lib/appwrite";
 import {
   productService,
   productCategoryService,
+  unitOfMeasureService,
 } from "../../../lib/priceListService";
-import type { Product, ProductCategory } from "../../../types/priceList";
+import type { Product, ProductCategory, UnitOfMeasure } from "../../../types/priceList";
 import CreateProductModal from "../../priceList/CreateProductModal";
 import CreateCategoryModal from "../../priceList/CreateCategoryModal";
+import CreateUnitModal from "../../priceList/CreateUnitModal";
 import BulkImportModal from "../../priceList/BulkImportModal";
 import ConfirmationDialog from "../../common/ConfirmationDialog";
 
@@ -20,9 +23,12 @@ const ProductManagement = () => {
   const [activeTab, setActiveTab] = useState<Tab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [units, setUnits] = useState<UnitOfMeasure[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showUnitModal, setShowUnitModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [editingCategory, setEditingCategory] = useState<ProductCategory | undefined>();
@@ -35,18 +41,48 @@ const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    loadData();
+    loadUser();
   }, []);
 
+  useEffect(() => {
+    if (currentUser) {
+      loadData();
+    }
+  }, [currentUser]);
+
+  const loadUser = async () => {
+    try {
+      const user = await account.get();
+      setCurrentUser({ id: user.$id, name: user.name || "Supplier" });
+    } catch (error) {
+      console.error("Error loading user:", error);
+      showNotification("error", "Failed to load user information");
+    }
+  };
+
   const loadData = async () => {
+    if (!currentUser) return;
+
     setLoading(true);
     try {
-      const [productsData, categoriesData] = await Promise.all([
+      const [productsData, categoriesData, unitsData] = await Promise.all([
         productService.getAll(),
         productCategoryService.getAll(),
+        unitOfMeasureService.getBySupplier(currentUser.id),
       ]);
       setProducts(productsData);
       setCategories(categoriesData);
+
+      // Ensure at least the default 'kg' unit exists
+      if (unitsData.length === 0) {
+        const defaultUnit = await unitOfMeasureService.createDefaultUnit(
+          currentUser.id,
+          currentUser.name
+        );
+        setUnits([defaultUnit]);
+      } else {
+        setUnits(unitsData);
+      }
     } catch (error) {
       console.error("Error loading data:", error);
       showNotification("error", "Failed to load data");
@@ -103,6 +139,13 @@ const ProductManagement = () => {
     }
   };
 
+  // Unit Handlers
+  const handleCreateUnit = async (data: Omit<UnitOfMeasure, "$id">) => {
+    await unitOfMeasureService.create(data);
+    await loadData();
+    showNotification("success", "Unit created successfully");
+  };
+
   // Category Handlers
   const handleCreateCategory = async (data: Omit<ProductCategory, "$id">) => {
     await productCategoryService.create(data);
@@ -151,9 +194,7 @@ const ProductManagement = () => {
   };
 
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.base_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredCategories = categories.filter((category) =>
@@ -193,7 +234,7 @@ const ProductManagement = () => {
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* Products Tables - Grouped by Category */}
       {loading ? (
         <div className="flex items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg">
           <div className="flex flex-col items-center gap-3">
@@ -216,94 +257,109 @@ const ProductManagement = () => {
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Product Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    SKU
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredProducts.map((product) => (
-                  <tr
-                    key={product.$id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                          {product.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {product.base_name}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
-                      {getCategoryName(product.category_id)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                      {product.sku || "-"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          product.is_active
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        {product.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
-                          title="Edit"
-                        >
-                          <span className="material-symbols-outlined text-base">
-                            edit
-                          </span>
-                        </button>
-                        <button
-                          onClick={() =>
-                            setDeleteConfirm({
-                              type: "product",
-                              id: product.$id!,
-                              name: product.name,
-                            })
-                          }
-                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                          title="Delete"
-                        >
-                          <span className="material-symbols-outlined text-base">
-                            delete
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-6">
+          {/* Group products by category */}
+          {categories
+            .filter((category) =>
+              filteredProducts.some((p) => p.category_id === category.$id)
+            )
+            .map((category) => {
+              const categoryProducts = filteredProducts.filter(
+                (p) => p.category_id === category.$id
+              );
+
+              return (
+                <div
+                  key={category.$id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                >
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Product Name
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Category
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Unit
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Status
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {categoryProducts.map((product) => (
+                          <tr
+                            key={product.$id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                {product.name}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                              {getCategoryName(product.category_id)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                {product.unit_of_measure}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  product.is_active
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                }`}
+                              >
+                                {product.is_active ? "Active" : "Inactive"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleEditProduct(product)}
+                                  className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                                  title="Edit"
+                                >
+                                  <span className="material-symbols-outlined text-base">
+                                    edit
+                                  </span>
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    setDeleteConfirm({
+                                      type: "product",
+                                      id: product.$id!,
+                                      name: product.name,
+                                    })
+                                  }
+                                  className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                  title="Delete"
+                                >
+                                  <span className="material-symbols-outlined text-base">
+                                    delete
+                                  </span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       )}
     </div>
@@ -522,6 +578,8 @@ const ProductManagement = () => {
         }}
         onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct}
         categories={categories}
+        units={units}
+        onAddUnit={() => setShowUnitModal(true)}
         editProduct={editingProduct}
       />
 
@@ -535,6 +593,16 @@ const ProductManagement = () => {
           editingCategory ? handleUpdateCategory : handleCreateCategory
         }
         editCategory={editingCategory}
+      />
+
+      <CreateUnitModal
+        isOpen={showUnitModal}
+        onClose={() => setShowUnitModal(false)}
+        onSubmit={handleCreateUnit}
+        supplierInfo={{
+          id: currentUser?.id || "",
+          name: currentUser?.name || "",
+        }}
       />
 
       <BulkImportModal
