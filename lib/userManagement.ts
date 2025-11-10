@@ -71,7 +71,8 @@ export async function createUser(
     );
 
     if (response.responseStatusCode !== 200) {
-      throw new Error("Failed to create user");
+      const error = JSON.parse(response.responseBody);
+      throw new Error(error.error || "Failed to create user");
     }
 
     const result = JSON.parse(response.responseBody);
