@@ -118,7 +118,8 @@ Doversoles 2/300 GR,,,,,DOV-2-300`;
       title="Bulk Import Products"
       wide
     >
-      <div className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
+      <div className="flex flex-col h-full">
+        <div className="space-y-4 flex-1 overflow-y-auto">
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
             <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
@@ -220,9 +221,10 @@ Doversoles 2/300 GR,,,,,DOV-2-300`;
             {exampleFormats}
           </pre>
         </details>
+        </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Actions - Fixed at bottom */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
           <button
             type="button"
             onClick={handleClose}

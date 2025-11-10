@@ -71,52 +71,54 @@ const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Unit of Measure">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <div className="space-y-4 flex-1 overflow-y-auto">
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            </div>
+          )}
+
+          {/* Unit Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Unit Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.unit_name}
+              onChange={(e) => setFormData({ ...formData, unit_name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+              placeholder="e.g., box, piece, liter"
+              disabled={loading}
+              autoFocus
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Enter a short unit name (e.g., "kg", "box", "piece")
+            </p>
           </div>
-        )}
 
-        {/* Unit Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Unit Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={formData.unit_name}
-            onChange={(e) => setFormData({ ...formData, unit_name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-            placeholder="e.g., box, piece, liter"
-            disabled={loading}
-            autoFocus
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Enter a short unit name (e.g., "kg", "box", "piece")
-          </p>
+          {/* Display Order */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Display Order
+            </label>
+            <input
+              type="number"
+              value={formData.display_order}
+              onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+              disabled={loading}
+              min="0"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Lower numbers appear first in the dropdown
+            </p>
+          </div>
         </div>
 
-        {/* Display Order */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Display Order
-          </label>
-          <input
-            type="number"
-            value={formData.display_order}
-            onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-            disabled={loading}
-            min="0"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Lower numbers appear first in the dropdown
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Actions - Fixed at bottom */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
           <button
             type="button"
             onClick={handleClose}

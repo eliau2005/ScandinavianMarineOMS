@@ -102,7 +102,8 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
       onClose={handleClose}
       title={editCategory ? "Edit Category" : "Create Product Category"}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <div className="space-y-4 flex-1 overflow-y-auto">
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
             <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
@@ -220,9 +221,10 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
             </label>
           </div>
         </div>
+        </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Actions - Fixed at bottom */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
           <button
             type="button"
             onClick={handleClose}

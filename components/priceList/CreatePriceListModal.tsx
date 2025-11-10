@@ -98,100 +98,102 @@ const CreatePriceListModal: React.FC<CreatePriceListModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Create New Price List">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-          </div>
-        )}
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <div className="space-y-4 flex-1 overflow-y-auto">
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            </div>
+          )}
 
-        {/* Auto-generated Name Preview */}
-        {generatedName && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
-              Price List Name (Auto-generated)
+          {/* Auto-generated Name Preview */}
+          {generatedName && (
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
+                Price List Name (Auto-generated)
+              </p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                {generatedName}
+              </p>
+            </div>
+          )}
+
+          {/* Delivery Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Delivery Start Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.effective_date}
+              onChange={(e) =>
+                setFormData({ ...formData, effective_date: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              First day of delivery window
             </p>
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-              {generatedName}
+          </div>
+
+          {/* Delivery End Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Delivery End Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.expiry_date}
+              onChange={(e) =>
+                setFormData({ ...formData, expiry_date: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Last day of delivery window
             </p>
           </div>
-        )}
 
-        {/* Delivery Start Date */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Delivery Start Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.effective_date}
-            onChange={(e) =>
-              setFormData({ ...formData, effective_date: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-            disabled={loading}
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            First day of delivery window
-          </p>
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Notes (Optional)
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent resize-none"
+              placeholder="Internal notes about this price list..."
+              disabled={loading}
+            />
+          </div>
+
+          {/* Set as Default */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_default"
+              checked={formData.is_default}
+              onChange={(e) =>
+                setFormData({ ...formData, is_default: e.target.checked })
+              }
+              className="w-4 h-4 text-supplier-accent bg-gray-100 border-gray-300 rounded focus:ring-supplier-accent focus:ring-2"
+              disabled={loading}
+            />
+            <label
+              htmlFor="is_default"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Set as default price list
+            </label>
+          </div>
         </div>
 
-        {/* Delivery End Date */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Delivery End Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.expiry_date}
-            onChange={(e) =>
-              setFormData({ ...formData, expiry_date: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-            disabled={loading}
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Last day of delivery window
-          </p>
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Notes (Optional)
-          </label>
-          <textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent resize-none"
-            placeholder="Internal notes about this price list..."
-            disabled={loading}
-          />
-        </div>
-
-        {/* Set as Default */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="is_default"
-            checked={formData.is_default}
-            onChange={(e) =>
-              setFormData({ ...formData, is_default: e.target.checked })
-            }
-            className="w-4 h-4 text-supplier-accent bg-gray-100 border-gray-300 rounded focus:ring-supplier-accent focus:ring-2"
-            disabled={loading}
-          />
-          <label
-            htmlFor="is_default"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Set as default price list
-          </label>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Actions - Fixed at bottom */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
           <button
             type="button"
             onClick={handleClose}

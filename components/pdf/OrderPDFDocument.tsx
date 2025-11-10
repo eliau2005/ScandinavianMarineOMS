@@ -131,21 +131,17 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   productCol: {
-    width: "35%",
+    width: "40%",
   },
-  unitCol: {
-    width: "12%",
+  unitPriceCol: {
+    width: "30%",
   },
   quantityCol: {
-    width: "13%",
+    width: "15%",
     textAlign: "center",
   },
-  priceCol: {
-    width: "20%",
-    textAlign: "right",
-  },
   totalCol: {
-    width: "20%",
+    width: "15%",
     textAlign: "right",
   },
   totalSection: {
@@ -285,14 +281,11 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
                     <Text style={[styles.cellHeader, styles.productCol]}>
                       PRODUCT
                     </Text>
-                    <Text style={[styles.cellHeader, styles.unitCol]}>
-                      UNIT
+                    <Text style={[styles.cellHeader, styles.unitPriceCol]}>
+                      UNIT + PRICE
                     </Text>
                     <Text style={[styles.cellHeader, styles.quantityCol]}>
                       QUANTITY
-                    </Text>
-                    <Text style={[styles.cellHeader, styles.priceCol]}>
-                      PRICE
                     </Text>
                     <Text style={[styles.cellHeader, styles.totalCol]}>
                       TOTAL
@@ -311,12 +304,11 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
                       <Text style={[styles.cell, styles.productCol]}>
                         {item.product_name}
                       </Text>
-                      <Text style={[styles.cell, styles.unitCol]}>Box</Text>
+                      <Text style={[styles.cell, styles.unitPriceCol]}>
+                        {formatCurrency(item.unit_price, currentOrder.currency)} / Box
+                      </Text>
                       <Text style={[styles.cellBold, styles.quantityCol]}>
                         {item.quantity}
-                      </Text>
-                      <Text style={[styles.cell, styles.priceCol]}>
-                        {formatCurrency(item.unit_price, currentOrder.currency)}
                       </Text>
                       <Text style={[styles.cellBold, styles.totalCol]}>
                         {formatCurrency(item.total, currentOrder.currency)}

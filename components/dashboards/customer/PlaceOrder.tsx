@@ -384,17 +384,19 @@ const PlaceOrder = () => {
                           return (
                             <div
                               key={product.product.$id}
-                              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                              className="grid grid-cols-[2fr_1.5fr_1.5fr] gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                             >
-                              <div className="flex-1">
+                              <div>
                                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                   {product.product.name}
                                 </p>
+                              </div>
+                              <div>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
                                   € {product.price_box?.toFixed(2)} / {product.product.unit_of_measure}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 justify-end">
                                 <button
                                   onClick={() =>
                                     handleQuantityChange(

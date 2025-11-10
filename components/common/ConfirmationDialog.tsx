@@ -44,27 +44,29 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <div>
-        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
-          {message}
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto">
+          <div className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
+            {message}
+          </div>
+
+          {confirmationString && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                To confirm, type "<strong>{confirmationString}</strong>" in the box below
+              </label>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                disabled={isConfirming}
+              />
+            </div>
+          )}
         </div>
 
-        {confirmationString && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              To confirm, type "<strong>{confirmationString}</strong>" in the box below
-            </label>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-              disabled={isConfirming}
-            />
-          </div>
-        )}
-
-        <div className="mt-6 flex justify-end space-x-3">
+        <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}

@@ -474,19 +474,28 @@ const IncomingOrders = () => {
                         {categoryItems.map((item, index) => (
                           <div
                             key={index}
-                            className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                            className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                           >
-                            <div className="flex-1">
+                            <div>
                               <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                 {item.product_name}
                               </p>
+                            </div>
+                            <div>
                               <p className="text-xs text-gray-600 dark:text-gray-400">
-                                {item.quantity} × € {item.unit_price.toFixed(2)}
+                                € {item.unit_price.toFixed(2)}
                               </p>
                             </div>
-                            <p className="font-semibold text-gray-800 dark:text-gray-200">
-                              € {item.total.toFixed(2)}
-                            </p>
+                            <div>
+                              <p className="text-sm text-gray-800 dark:text-gray-200">
+                                {item.quantity}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                € {item.total.toFixed(2)}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>

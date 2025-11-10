@@ -262,6 +262,23 @@ export const productService = {
 
 export const priceListService = {
   /**
+   * Get all price lists (admin only)
+   */
+  async getAll(): Promise<PriceList[]> {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PRICE_LISTS,
+        [Query.orderDesc("effective_date"), Query.limit(1000)]
+      );
+      return response.documents as PriceList[];
+    } catch (error) {
+      console.error("Error fetching all price lists:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all price lists for a supplier
    */
   async getBySupplier(supplierId: string): Promise<PriceList[]> {
@@ -430,6 +447,44 @@ export const priceListService = {
       await databases.deleteDocument(DATABASE_ID, COLLECTIONS.PRICE_LISTS, id);
     } catch (error) {
       console.error("Error deleting price list:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get price list items formatted for display in PriceTable
+   */
+  async getItems(id: string): Promise<any[]> {
+    try {
+      const [items, products, categories] = await Promise.all([
+        priceListItemService.getByPriceList(id),
+        productService.getAll(),
+        productCategoryService.getAll(),
+      ]);
+
+      const productMap = new Map(products.map((p) => [p.$id!, p]));
+      const categoryMap = new Map(categories.map((c) => [c.$id!, c]));
+
+      return items
+        .map((item) => {
+          const product = productMap.get(item.product_id);
+          if (!product) return null;
+
+          const category = categoryMap.get(product.category_id);
+
+          return {
+            product,
+            category,
+            price_box: item.price_box,
+            price_box_vac: item.price_box_vac,
+            vac_surcharge: item.vac_surcharge,
+            is_available: item.is_available,
+            notes: item.notes,
+          };
+        })
+        .filter((item) => item !== null);
+    } catch (error) {
+      console.error("Error fetching price list items:", error);
       throw error;
     }
   },
