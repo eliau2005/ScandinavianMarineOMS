@@ -15,6 +15,8 @@ export const databases = new Databases(client);
 export const appwriteConfig = {
   databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID,
   profilesCollectionId: import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID,
+  customerSupplierAssocCollectionId: import.meta.env.VITE_APPWRITE_CUSTOMER_SUPPLIER_ASSOC_COLLECTION_ID,
+  ordersCollectionId: import.meta.env.VITE_APPWRITE_ORDERS_COLLECTION_ID,
 };
 
 export { client };

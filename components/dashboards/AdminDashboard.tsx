@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { account } from "../../lib/appwrite";
 import UserManagement from "./admin/UserManagement";
+import SupplierCustomerAssociations from "./admin/SupplierCustomerAssociations";
+import OrdersOverview from "./admin/OrdersOverview";
+import AllPriceLists from "./admin/AllPriceLists";
 
 type AdminView = "dashboard" | "users" | "associations" | "orders" | "pricing";
 
@@ -24,16 +27,22 @@ const AdminDashboard = () => {
     {
       id: "associations",
       label: "Associate suppliers with customers",
-      disabled: true,
+      disabled: false,
     },
-    { id: "orders", label: "Manage orders", disabled: true },
-    { id: "pricing", label: "Manage price lists", disabled: true },
+    { id: "orders", label: "Manage orders", disabled: false },
+    { id: "pricing", label: "Manage price lists", disabled: false },
   ];
 
   const renderContent = () => {
     switch (activeView) {
       case "users":
         return <UserManagement />;
+      case "associations":
+        return <SupplierCustomerAssociations />;
+      case "orders":
+        return <OrdersOverview />;
+      case "pricing":
+        return <AllPriceLists />;
       case "dashboard":
       default:
         return (

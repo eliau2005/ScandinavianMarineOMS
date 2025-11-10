@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { account } from "../../lib/appwrite";
+import PlaceOrder from "./customer/PlaceOrder";
+import OrderHistory from "./customer/OrderHistory";
+
+type CustomerView = "order" | "history";
 
 const CustomerDashboard = () => {
+  const [activeView, setActiveView] = useState<CustomerView>("order");
+
   const handleLogout = async () => {
     try {
       await account.deleteSession("current");
@@ -9,6 +15,22 @@ const CustomerDashboard = () => {
     } catch (error) {
       console.error("Logout error:", error);
       window.location.reload();
+    }
+  };
+
+  const navLinks: { id: CustomerView; label: string; icon: string }[] = [
+    { id: "order", label: "Place Order", icon: "shopping_cart" },
+    { id: "history", label: "Order History", icon: "history" },
+  ];
+
+  const renderContent = () => {
+    switch (activeView) {
+      case "order":
+        return <PlaceOrder />;
+      case "history":
+        return <OrderHistory />;
+      default:
+        return <PlaceOrder />;
     }
   };
 
@@ -23,6 +45,24 @@ const CustomerDashboard = () => {
             Customer Portal
           </h1>
         </div>
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <button
+              key={link.id}
+              onClick={() => setActiveView(link.id)}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                activeView === link.id
+                  ? "text-customer-accent font-semibold"
+                  : "text-gray-600 dark:text-gray-300 hover:text-customer-accent dark:hover:text-customer-accent"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">
+                {link.icon}
+              </span>
+              <span>{link.label}</span>
+            </button>
+          ))}
+        </nav>
         <button
           onClick={handleLogout}
           className="flex items-center justify-center gap-2 px-4 py-2 bg-customer-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-colors text-sm"
@@ -31,21 +71,8 @@ const CustomerDashboard = () => {
           <span>Logout</span>
         </button>
       </header>
-      <main className="flex flex-1 flex-col items-center justify-center overflow-y-auto">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md">
-          <span className="material-symbols-outlined text-6xl text-customer-accent">
-            construction
-          </span>
-          <h1 className="mt-4 text-3xl font-bold text-gray-800 dark:text-gray-200">
-            Under Development
-          </h1>
-          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-            This page is currently under development.
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            Customer features coming soon!
-          </p>
-        </div>
+      <main className="flex flex-1 flex-col overflow-y-auto">
+        {renderContent()}
       </main>
     </div>
   );
