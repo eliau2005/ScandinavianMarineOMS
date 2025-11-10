@@ -1,0 +1,232 @@
+import React, { useState } from "react";
+import Modal from "../common/Modal";
+import type { ProductCategory } from "../../types/priceList";
+
+interface CreateCategoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<ProductCategory, "$id">) => Promise<void>;
+  editCategory?: ProductCategory;
+}
+
+const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  editCategory,
+}) => {
+  const [formData, setFormData] = useState({
+    name: editCategory?.name || "",
+    display_order: editCategory?.display_order || 0,
+    icon: editCategory?.icon || "",
+    description: editCategory?.description || "",
+    is_active: editCategory?.is_active ?? true,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (editCategory) {
+      setFormData({
+        name: editCategory.name,
+        display_order: editCategory.display_order,
+        icon: editCategory.icon || "",
+        description: editCategory.description || "",
+        is_active: editCategory.is_active,
+      });
+    }
+  }, [editCategory]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!formData.name.trim()) {
+      setError("Category name is required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSubmit({
+        name: formData.name.trim(),
+        display_order: formData.display_order,
+        icon: formData.icon.trim() || undefined,
+        description: formData.description.trim() || undefined,
+        is_active: formData.is_active,
+      });
+
+      // Reset form
+      setFormData({
+        name: "",
+        display_order: 0,
+        icon: "",
+        description: "",
+        is_active: true,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save category");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!loading) {
+      setFormData({
+        name: "",
+        display_order: 0,
+        icon: "",
+        description: "",
+        is_active: true,
+      });
+      setError(null);
+      onClose();
+    }
+  };
+
+  const iconSuggestions = [
+    "set_meal", "phishing", "water_drop", "restaurant",
+    "local_dining", "lunch_dining", "ramen_dining"
+  ];
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={editCategory ? "Edit Category" : "Create Product Category"}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
+            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+          </div>
+        )}
+
+        {/* Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Category Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+            placeholder="e.g., Salmon, Cod, Turbot"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Display Order */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Display Order
+          </label>
+          <input
+            type="number"
+            value={formData.display_order}
+            onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+            disabled={loading}
+            min="0"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Lower numbers appear first
+          </p>
+        </div>
+
+        {/* Icon */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Icon (Material Symbol)
+          </label>
+          <input
+            type="text"
+            value={formData.icon}
+            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+            placeholder="e.g., set_meal, phishing"
+            disabled={loading}
+          />
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {iconSuggestions.map((icon) => (
+              <button
+                key={icon}
+                type="button"
+                onClick={() => setFormData({ ...formData, icon })}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">{icon}</span>
+                <span>{icon}</span>
+              </button>
+            ))}
+          </div>
+          {formData.icon && (
+            <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>Preview:</span>
+              <span className="material-symbols-outlined text-2xl">{formData.icon}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Description (Optional)
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent resize-none"
+            placeholder="Category description..."
+            disabled={loading}
+          />
+        </div>
+
+        {/* Active */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_active"
+            checked={formData.is_active}
+            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            className="w-4 h-4 text-supplier-accent bg-gray-100 border-gray-300 rounded focus:ring-supplier-accent focus:ring-2"
+            disabled={loading}
+          />
+          <label htmlFor="is_active" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Active
+          </label>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-supplier-accent rounded-lg hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {loading && (
+              <span className="animate-spin material-symbols-outlined text-base">
+                progress_activity
+              </span>
+            )}
+            <span>{loading ? "Saving..." : editCategory ? "Update Category" : "Create Category"}</span>
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+export default CreateCategoryModal;

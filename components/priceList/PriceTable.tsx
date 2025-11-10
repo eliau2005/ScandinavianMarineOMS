@@ -1,0 +1,270 @@
+import React, { useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  createColumnHelper,
+  SortingState,
+  ColumnFiltersState,
+} from "@tanstack/react-table";
+import type { PriceListTableRow } from "../../types/priceList";
+
+interface PriceTableProps {
+  data: PriceListTableRow[];
+  onPriceChange?: (productId: string, field: "price_box" | "price_box_vac", value: number) => void;
+  editable?: boolean;
+  showVacPricing?: boolean;
+  loading?: boolean;
+}
+
+const columnHelper = createColumnHelper<PriceListTableRow>();
+
+const PriceTable: React.FC<PriceTableProps> = ({
+  data,
+  onPriceChange,
+  editable = false,
+  showVacPricing = true,
+  loading = false,
+}) => {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+
+  const columns = useMemo(() => {
+    const baseColumns = [
+      columnHelper.accessor("category.name", {
+        id: "category",
+        header: "Category",
+        cell: (info) => (
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            {info.getValue() || "N/A"}
+          </span>
+        ),
+      }),
+      columnHelper.accessor("product.name", {
+        id: "product_name",
+        header: "Product",
+        cell: (info) => (
+          <div className="max-w-md">
+            <p className="text-sm text-gray-800 dark:text-gray-200">
+              {info.getValue()}
+            </p>
+            {info.row.original.product.sku && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                SKU: {info.row.original.product.sku}
+              </p>
+            )}
+          </div>
+        ),
+      }),
+      columnHelper.accessor("price_box", {
+        id: "price_box",
+        header: "Price/Box",
+        cell: (info) => {
+          const value = info.getValue();
+          const productId = info.row.original.product.$id!;
+
+          if (editable && onPriceChange) {
+            return (
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={value || ""}
+                onChange={(e) =>
+                  onPriceChange(productId, "price_box", parseFloat(e.target.value) || 0)
+                }
+                className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                placeholder="0.00"
+              />
+            );
+          }
+
+          return value !== null ? (
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
+              € {value.toFixed(2)}
+            </span>
+          ) : (
+            <span className="text-gray-400 dark:text-gray-600">-</span>
+          );
+        },
+      }),
+    ];
+
+    if (showVacPricing) {
+      baseColumns.push(
+        columnHelper.accessor("price_box_vac", {
+          id: "price_box_vac",
+          header: "Price/Box (VAC)",
+          cell: (info) => {
+            const value = info.getValue();
+            const productId = info.row.original.product.$id!;
+            const surcharge = info.row.original.vac_surcharge;
+
+            if (editable && onPriceChange) {
+              return (
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={value || ""}
+                    onChange={(e) =>
+                      onPriceChange(
+                        productId,
+                        "price_box_vac",
+                        parseFloat(e.target.value) || 0
+                      )
+                    }
+                    className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                    placeholder="0.00"
+                  />
+                  {surcharge && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      +€{surcharge.toFixed(2)}/kg
+                    </span>
+                  )}
+                </div>
+              );
+            }
+
+            return value !== null ? (
+              <div className="flex flex-col">
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  € {value.toFixed(2)}
+                </span>
+                {surcharge && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    +€{surcharge.toFixed(2)}/kg
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-400 dark:text-gray-600">-</span>
+            );
+          },
+        })
+      );
+    }
+
+    baseColumns.push(
+      columnHelper.accessor("is_available", {
+        id: "availability",
+        header: "Status",
+        cell: (info) => {
+          const available = info.getValue();
+          return (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                available
+                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+              }`}
+            >
+              {available ? "Available" : "Unavailable"}
+            </span>
+          );
+        },
+      })
+    );
+
+    return baseColumns;
+  }, [editable, showVacPricing, onPriceChange]);
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-supplier-accent"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading price data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
+          inventory_2
+        </span>
+        <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+          No products available
+        </p>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+          Add products to start building your price list
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <div className="flex items-center gap-2">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                      {header.column.getIsSorted() && (
+                        <span className="material-symbols-outlined text-sm">
+                          {header.column.getIsSorted() === "asc"
+                            ? "arrow_upward"
+                            : "arrow_downward"}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200"
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default PriceTable;
