@@ -36,6 +36,7 @@ const ProductManagement = () => {
     type: "product" | "category";
     id: string;
     name: string;
+    productCount?: number;
   } | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,6 +99,19 @@ const ProductManagement = () => {
 
   // Product Handlers
   const handleCreateProduct = async (data: Omit<Product, "$id">) => {
+    const { name, category_id } = data;
+    const existingProduct = products.find(
+      (p) =>
+        p.name.toLowerCase() === name.toLowerCase() &&
+        p.category_id === category_id
+    );
+
+    if (existingProduct) {
+      throw new Error(
+        `Product "${name}" already exists in this category.`
+      );
+    }
+
     const product = await productService.create(data);
     await loadData();
     showNotification("success", "Product created successfully");
@@ -110,6 +124,21 @@ const ProductManagement = () => {
 
   const handleUpdateProduct = async (data: Omit<Product, "$id">) => {
     if (!editingProduct) return;
+
+    const { name, category_id } = data;
+    const existingProduct = products.find(
+      (p) =>
+        p.$id !== editingProduct.$id &&
+        p.name.toLowerCase() === name.toLowerCase() &&
+        p.category_id === category_id
+    );
+
+    if (existingProduct) {
+      throw new Error(
+        `Product "${name}" already exists in this category.`
+      );
+    }
+
     await productService.update(editingProduct.$id!, data);
     await loadData();
     setEditingProduct(undefined);
@@ -129,7 +158,49 @@ const ProductManagement = () => {
   };
 
   const handleBulkImport = async (productsData: Omit<Product, "$id">[]) => {
+    // 1. Check for duplicates within the import list
+    const nameCategorySet = new Set<string>();
+    const duplicatesInList: string[] = [];
+    for (const product of productsData) {
+      const key = `${product.name.toLowerCase()}|${product.category_id}`;
+      if (nameCategorySet.has(key)) {
+        duplicatesInList.push(product.name);
+      }
+      nameCategorySet.add(key);
+    }
+
+    if (duplicatesInList.length > 0) {
+      throw new Error(
+        `Duplicate products found in your import list: ${[
+          ...new Set(duplicatesInList),
+        ].join(", ")}`
+      );
+    }
+
+    // 2. Check for duplicates against existing products
+    const duplicatesInDb: string[] = [];
+    for (const product of productsData) {
+      const existingProduct = products.find(
+        (p) =>
+          p.name.toLowerCase() === product.name.toLowerCase() &&
+          p.category_id === product.category_id
+      );
+      if (existingProduct) {
+        duplicatesInDb.push(product.name);
+      }
+    }
+
+    if (duplicatesInDb.length > 0) {
+      throw new Error(
+        `The following products already exist in these categories: ${duplicatesInDb.join(
+          ", "
+        )}`
+      );
+    }
+
+    // If no duplicates, proceed with creation
     try {
+      console.log("Bulk importing products with data:", productsData); // Debugging line
       await Promise.all(productsData.map((data) => productService.create(data)));
       await loadData();
       showNotification("success", `Successfully imported ${productsData.length} products`);
@@ -160,7 +231,32 @@ const ProductManagement = () => {
 
   const handleUpdateCategory = async (data: Omit<ProductCategory, "$id">) => {
     if (!editingCategory) return;
-    await productCategoryService.update(editingCategory.$id!, data);
+
+    const originalIsActive = editingCategory.is_active;
+    const updatedCategory = await productCategoryService.update(
+      editingCategory.$id!,
+      data
+    );
+
+    // If category was active and is now inactive, deactivate all its products
+    if (originalIsActive && !updatedCategory.is_active) {
+      const productsToDeactivate = products.filter(
+        (p) => p.category_id === updatedCategory.$id && p.is_active
+      );
+
+      if (productsToDeactivate.length > 0) {
+        await Promise.all(
+          productsToDeactivate.map((product) =>
+            productService.update(product.$id!, { is_active: false })
+          )
+        );
+        showNotification(
+          "info",
+          `${productsToDeactivate.length} products in "${updatedCategory.name}" have been deactivated.`
+        );
+      }
+    }
+
     await loadData();
     setEditingCategory(undefined);
     showNotification("success", "Category updated successfully");
@@ -168,20 +264,22 @@ const ProductManagement = () => {
 
   const handleDeleteCategory = async (id: string) => {
     try {
-      // Check if category has products
-      const categoryProducts = products.filter((p) => p.category_id === id);
-      if (categoryProducts.length > 0) {
-        showNotification(
-          "error",
-          `Cannot delete category with ${categoryProducts.length} products. Delete products first.`
+      const productsInCategory = products.filter((p) => p.category_id === id);
+      if (productsInCategory.length > 0) {
+        // First, delete all products in the category
+        await Promise.all(
+          productsInCategory.map((p) => productService.delete(p.$id!))
         );
-        setDeleteConfirm(null);
-        return;
       }
 
+      // Then, delete the category itself
       await productCategoryService.delete(id);
+
       await loadData();
-      showNotification("success", "Category deleted successfully");
+      showNotification(
+        "success",
+        `Category and its ${productsInCategory.length} products deleted successfully`
+      );
       setDeleteConfirm(null);
     } catch (error) {
       console.error("Error deleting category:", error);
@@ -201,22 +299,19 @@ const ProductManagement = () => {
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const renderProductsTab = () => (
+  const renderProducts = () => (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Products
+            Products ({filteredProducts.length})
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage your product catalog
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowBulkImportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             <span className="material-symbols-outlined text-base">upload</span>
             <span>Bulk Import</span>
@@ -226,7 +321,7 @@ const ProductManagement = () => {
               setEditingProduct(undefined);
               setShowProductModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-supplier-accent text-white rounded-lg text-xs font-medium hover:bg-opacity-90 transition-colors"
           >
             <span className="material-symbols-outlined text-base">add</span>
             <span>New Product</span>
@@ -257,132 +352,264 @@ const ProductManagement = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Group products by category */}
-          {categories
-            .filter((category) =>
-              filteredProducts.some((p) => p.category_id === category.$id)
-            )
-            .map((category) => {
-              const categoryProducts = filteredProducts.filter(
-                (p) => p.category_id === category.$id
-              );
+        <div className="flex gap-6">
+          {/* Left Column */}
+          <div className="flex-1 space-y-6">
+            {categories
+              .filter((category) =>
+                filteredProducts.some((p) => p.category_id === category.$id)
+              )
+              .map((category, index) => {
+                // Only render odd-indexed categories (0, 2, 4, etc.) in left column
+                if (index % 2 !== 0) return null;
 
-              return (
-                <div
-                  key={category.$id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
-                >
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                            Product Name
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                            Category
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                            Unit
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                            Status
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {categoryProducts.map((product) => (
-                          <tr
-                            key={product.$id}
-                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                          >
-                            <td className="px-4 py-3">
-                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                {product.name}
-                              </p>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
-                              {getCategoryName(product.category_id)}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                {product.unit_of_measure}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  product.is_active
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                }`}
-                              >
-                                {product.is_active ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleEditProduct(product)}
-                                  className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
-                                  title="Edit"
-                                >
-                                  <span className="material-symbols-outlined text-base">
-                                    edit
-                                  </span>
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    setDeleteConfirm({
-                                      type: "product",
-                                      id: product.$id!,
-                                      name: product.name,
-                                    })
-                                  }
-                                  className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                  title="Delete"
-                                >
-                                  <span className="material-symbols-outlined text-base">
-                                    delete
-                                  </span>
-                                </button>
-                              </div>
-                            </td>
+                const categoryProducts = filteredProducts.filter(
+                  (p) => p.category_id === category.$id
+                );
+
+                return (
+                  <div
+                    key={category.$id}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                  >
+                    {/* Category Header */}
+                    <div className="bg-supplier-accent/10 dark:bg-supplier-accent/20 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center gap-2">
+                        {category.icon && (
+                          <span className="material-symbols-outlined text-xl text-supplier-accent">
+                            {category.icon}
+                          </span>
+                        )}
+                        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {category.name}
+                        </h4>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          ({categoryProducts.length})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Product Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Unit
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Actions
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {categoryProducts.map((product) => (
+                            <tr
+                              key={product.$id}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <td className="px-4 py-3">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  {product.name}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                  {product.unit_of_measure}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    product.is_active
+                                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                  }`}
+                                >
+                                  {product.is_active ? "Active" : "Inactive"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleEditProduct(product)}
+                                    className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                                    title="Edit"
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      edit
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setDeleteConfirm({
+                                        type: "product",
+                                        id: product.$id!,
+                                        name: product.name,
+                                      })
+                                    }
+                                    className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                    title="Delete"
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      delete
+                                    </span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+          </div>
+
+          {/* Right Column */}
+          <div className="flex-1 space-y-6">
+            {categories
+              .filter((category) =>
+                filteredProducts.some((p) => p.category_id === category.$id)
+              )
+              .map((category, index) => {
+                // Only render even-indexed categories (1, 3, 5, etc.) in right column
+                if (index % 2 === 0) return null;
+
+                const categoryProducts = filteredProducts.filter(
+                  (p) => p.category_id === category.$id
+                );
+
+                return (
+                  <div
+                    key={category.$id}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                  >
+                    {/* Category Header */}
+                    <div className="bg-supplier-accent/10 dark:bg-supplier-accent/20 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center gap-2">
+                        {category.icon && (
+                          <span className="material-symbols-outlined text-xl text-supplier-accent">
+                            {category.icon}
+                          </span>
+                        )}
+                        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {category.name}
+                        </h4>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          ({categoryProducts.length})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Product Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Unit
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {categoryProducts.map((product) => (
+                            <tr
+                              key={product.$id}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <td className="px-4 py-3">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  {product.name}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                  {product.unit_of_measure}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    product.is_active
+                                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                  }`}
+                                >
+                                  {product.is_active ? "Active" : "Inactive"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleEditProduct(product)}
+                                    className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                                    title="Edit"
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      edit
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setDeleteConfirm({
+                                        type: "product",
+                                        id: product.$id!,
+                                        name: product.name,
+                                      })
+                                    }
+                                    className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                    title="Delete"
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      delete
+                                    </span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
         </div>
       )}
     </div>
   );
 
-  const renderCategoriesTab = () => (
+  const renderCategories = () => (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Product Categories
+            Categories ({filteredCategories.length})
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Organize products into categories
-          </p>
         </div>
         <button
           onClick={() => {
             setEditingCategory(undefined);
             setShowCategoryModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 bg-supplier-accent text-white rounded-lg text-xs font-medium hover:bg-opacity-90 transition-colors"
         >
           <span className="material-symbols-outlined text-base">add</span>
           <span>New Category</span>
@@ -414,7 +641,7 @@ const ProductManagement = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-3 max-h-[70vh] overflow-y-auto p-1">
           {filteredCategories.map((category) => {
             const productCount = products.filter(
               (p) => p.category_id === category.$id
@@ -423,26 +650,26 @@ const ProductManagement = () => {
             return (
               <div
                 key={category.$id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
                     {category.icon && (
-                      <span className="material-symbols-outlined text-3xl text-supplier-accent">
+                      <span className="material-symbols-outlined text-2xl text-supplier-accent">
                         {category.icon}
                       </span>
                     )}
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">
                         {category.name}
                       </h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Order: {category.display_order}
+                        {productCount} product{productCount !== 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       category.is_active
                         ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                         : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
@@ -452,17 +679,8 @@ const ProductManagement = () => {
                   </span>
                 </div>
 
-                {category.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                    {category.description}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {productCount} product{productCount !== 1 ? "s" : ""}
-                  </span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleEditCategory(category)}
                       className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
@@ -478,6 +696,7 @@ const ProductManagement = () => {
                           type: "category",
                           id: category.$id!,
                           name: category.name,
+                          productCount: productCount,
                         })
                       }
                       className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
@@ -515,16 +734,6 @@ const ProductManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-          Product Management
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Manage products and categories for your price lists
-        </p>
-      </div>
 
       {/* Tabs & Search */}
       <div className="flex items-center justify-between mb-6">
@@ -567,7 +776,8 @@ const ProductManagement = () => {
       </div>
 
       {/* Content */}
-      {activeTab === "products" ? renderProductsTab() : renderCategoriesTab()}
+      {activeTab === "products" ? renderProducts() : renderCategories()}
+
 
       {/* Modals */}
       <CreateProductModal
@@ -626,9 +836,30 @@ const ProductManagement = () => {
           }
         }}
         title={`Delete ${deleteConfirm?.type === "product" ? "Product" : "Category"}`}
-        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`}
+        message={
+          deleteConfirm?.type === "category" &&
+          deleteConfirm.productCount &&
+          deleteConfirm.productCount > 0 ? (
+            <div className="space-y-2">
+              <p>
+                This action is irreversible. It will permanently delete the{" "}
+                <strong>{deleteConfirm.name}</strong> category and all{" "}
+                <strong>{deleteConfirm.productCount}</strong> products within it.
+              </p>
+            </div>
+          ) : (
+            `Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`
+          )
+        }
         confirmText="Delete"
         confirmButtonClass="bg-red-600 hover:bg-red-700"
+        confirmationString={
+          deleteConfirm?.type === "category" &&
+          deleteConfirm.productCount &&
+          deleteConfirm.productCount > 0
+            ? deleteConfirm.name
+            : undefined
+        }
       />
     </div>
   );
