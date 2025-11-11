@@ -22,8 +22,16 @@ const OrderHistory = () => {
     setLoading(true);
     try {
       const user = await account.get();
-      const ordersData = await orderService.getByCustomer(user.$id);
-      setOrders(ordersData);
+      const allOrders = await orderService.getByCustomer(user.$id);
+
+      // Exclude pending_approval and pending orders (those are shown in ViewPendingOrders)
+      const completedOrders = allOrders.filter(
+        (order) =>
+          order.status !== "pending_approval" &&
+          order.status !== "pending"
+      );
+
+      setOrders(completedOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
     } finally {
@@ -45,7 +53,7 @@ const OrderHistory = () => {
             Order History
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View all your past orders
+            View confirmed, in-progress, and completed orders
           </p>
         </div>
         {orders.length > 0 && (
@@ -80,10 +88,10 @@ const OrderHistory = () => {
             receipt_long
           </span>
           <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-            No orders yet
+            No order history
           </p>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            Place your first order to see it here
+            Completed and in-progress orders will appear here
           </p>
         </div>
       ) : (

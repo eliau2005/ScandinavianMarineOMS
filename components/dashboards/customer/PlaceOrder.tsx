@@ -368,30 +368,28 @@ const PlaceOrder = () => {
         </>
       ) : (
         // ===== CATEGORY-PAGINATED ORDERING VIEW =====
-        <>
-          {/* Header with Back Button */}
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <button
-                  onClick={handleBackToSelection}
-                  className="flex items-center gap-1 text-customer-accent hover:text-opacity-80 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-xl">arrow_back</span>
-                  <span className="text-sm font-medium">Change Supplier</span>
-                </button>
+        <div className="flex flex-col h-full">
+          {/* Compact Header - Single Row */}
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackToSelection}
+                className="flex items-center gap-1 text-customer-accent hover:text-opacity-80 transition-colors text-sm"
+              >
+                <span className="material-symbols-outlined text-lg">arrow_back</span>
+              </button>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 leading-tight">
+                  {selectedSupplierPriceList?.supplierName}
+                </h2>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {selectedSupplierPriceList?.priceList.name}
+                </p>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                {selectedSupplierPriceList?.supplierName}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {selectedSupplierPriceList?.priceList.name}
-              </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Cart Total</p>
-                <p className="text-2xl font-bold text-customer-accent">
+                <p className="text-lg font-bold text-customer-accent leading-tight">
                   € {cartTotal.toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -401,38 +399,59 @@ const PlaceOrder = () => {
               <button
                 onClick={handleViewSummary}
                 disabled={cart.size === 0}
-                className="px-4 py-2 bg-customer-accent text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-3 py-2 bg-customer-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
-                <span className="material-symbols-outlined text-base">receipt_long</span>
-                <span>View Summary</span>
+                <span className="material-symbols-outlined text-sm">receipt_long</span>
+                <span>Summary</span>
               </button>
             </div>
           </div>
 
-          {/* Category Progress Indicator */}
-          <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                {currentCategoryName}
-              </h3>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Category {currentCategoryIndex + 1} of {categories.length}
-              </span>
+          {/* Compact Navigation and Progress */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 mb-3">
+            <div className="flex items-center justify-between gap-4 mb-2">
+              <button
+                onClick={handlePreviousCategory}
+                disabled={currentCategoryIndex === 0}
+                className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                <span>Previous</span>
+              </button>
+
+              <div className="text-center flex-1">
+                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 leading-tight">
+                  {currentCategoryName}
+                </h3>
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  {currentCategoryIndex + 1} / {categories.length}
+                </span>
+              </div>
+
+              <button
+                onClick={handleNextCategory}
+                disabled={currentCategoryIndex === categories.length - 1}
+                className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span>Next</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
             </div>
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+
+            {/* Compact Progress Bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
               <div
-                className="bg-customer-accent h-2 rounded-full transition-all duration-300"
+                className="bg-customer-accent h-1.5 rounded-full transition-all duration-300"
                 style={{ width: `${((currentCategoryIndex + 1) / categories.length) * 100}%` }}
               ></div>
             </div>
           </div>
 
-          {/* Products Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6">
-            <div className="overflow-x-auto">
+          {/* Products Table - Scrollable */}
+          <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            <div className="h-full overflow-y-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Product
@@ -540,34 +559,7 @@ const PlaceOrder = () => {
               </table>
             </div>
           </div>
-
-          {/* Category Navigation */}
-          <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <button
-              onClick={handlePreviousCategory}
-              disabled={currentCategoryIndex === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
-              <span>Previous Category</span>
-            </button>
-
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {currentCategoryIndex + 1} / {categories.length}
-              </p>
-            </div>
-
-            <button
-              onClick={handleNextCategory}
-              disabled={currentCategoryIndex === categories.length - 1}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span>Next Category</span>
-              <span className="material-symbols-outlined text-base">arrow_forward</span>
-            </button>
-          </div>
-        </>
+        </div>
       )}
 
       {/* Order Summary Modal */}
