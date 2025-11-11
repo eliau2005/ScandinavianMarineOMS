@@ -76,7 +76,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         // Delete the session if role doesn't match
         await account.deleteSession("current");
         throw new Error(
-          `Access denied. Please use the ${profileDoc.role} login portal.`
+          `You are registered as a ${profileDoc.role}. Please select the "${profileDoc.role}" tab above and try again.`
         );
       }
 
@@ -93,16 +93,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
         // Handle Appwrite-specific errors
         if (err.code === 401) {
-          setError("Invalid email or password.");
+          setError("Invalid email or password. Please check your credentials and try again.");
         } else if (err.code === 404) {
-          setError("Profile not found. Please contact administrator to create your profile in the database.");
+          setError("Your account profile could not be found. Please contact your administrator for assistance.");
         } else if (err.code === 403) {
-          setError("Permission denied. Please contact administrator to fix profile permissions.");
+          setError("Access to your account is currently restricted. Please contact your administrator for assistance.");
         } else {
-          setError(err.message || "An unexpected error occurred.");
+          setError(err.message || "We're experiencing technical difficulties. Please try again later.");
         }
       } else {
-        setError(err.message || "An unexpected error occurred.");
+        setError(err.message || "We're experiencing technical difficulties. Please try again later.");
       }
     } finally {
       setLoading(false);
@@ -230,8 +230,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 </div>
 
                 {error && (
-                  <div className="px-4 text-center text-sm text-red-600 dark:text-red-400">
-                    {error}
+                  <div className="px-4">
+                    <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                      <span className="material-symbols-outlined text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" style={{ fontSize: "20px" }}>
+                        error
+                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-800 dark:text-red-200 leading-relaxed">
+                          {error}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
