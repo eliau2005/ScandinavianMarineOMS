@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { PDFDownloadLink } from "@react-pdf/renderer";
+import { PDFDownloadLink, pdf } from "@react-pdf/renderer";
+import JSZip from "jszip";
 import type { PriceList, PriceListWithItems, PriceListTableRow } from "../../types/priceList";
 import {
   priceListService,
@@ -24,6 +25,8 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
 }) => {
   const [archivedLists, setArchivedLists] = useState<PriceList[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloadingZip, setDownloadingZip] = useState(false);
+  const [zipProgress, setZipProgress] = useState<string>("");
   const [priceListData, setPriceListData] = useState<
     Map<string, { priceList: PriceListWithItems; tableData: PriceListTableRow[] }>
   >(new Map());
@@ -97,6 +100,71 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
     }
   };
 
+  const handleDownloadAllAsZip = async () => {
+    if (archivedLists.length === 0) return;
+
+    setDownloadingZip(true);
+    setZipProgress("Initializing...");
+
+    try {
+      const zip = new JSZip();
+
+      // Loop through all archived lists
+      for (let i = 0; i < archivedLists.length; i++) {
+        const priceList = archivedLists[i];
+        setZipProgress(`Processing ${i + 1} of ${archivedLists.length}: ${priceList.name}...`);
+
+        // Load price list details if not already loaded
+        let data = priceListData.get(priceList.$id!);
+        if (!data) {
+          data = await loadPriceListDetailsForPDF(priceList.$id!);
+        }
+
+        // Generate PDF blob
+        const pdfDoc = (
+          <PriceListPDFDocument
+            priceList={data.priceList}
+            tableData={data.tableData}
+          />
+        );
+
+        const blob = await pdf(pdfDoc).toBlob();
+
+        // Add PDF to zip with sanitized filename
+        const fileName = `${priceList.name.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+        zip.file(fileName, blob);
+      }
+
+      setZipProgress("Generating ZIP file...");
+
+      // Generate the ZIP file
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      // Trigger download
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `archived_price_lists_${format(new Date(), "yyyy-MM-dd")}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setZipProgress("Download complete!");
+      setTimeout(() => {
+        setZipProgress("");
+        setDownloadingZip(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Error creating ZIP file:", error);
+      setZipProgress("Error creating ZIP file");
+      setTimeout(() => {
+        setZipProgress("");
+        setDownloadingZip(false);
+      }, 3000);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -112,16 +180,51 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
               View and export archived price lists
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <span className="material-symbols-outlined text-2xl">close</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {archivedLists.length > 0 && (
+              <button
+                onClick={handleDownloadAllAsZip}
+                disabled={downloadingZip}
+                className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {downloadingZip ? (
+                  <>
+                    <span className="animate-spin material-symbols-outlined text-base">
+                      progress_activity
+                    </span>
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-base">
+                      folder_zip
+                    </span>
+                    <span>Download All as ZIP</span>
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <span className="material-symbols-outlined text-2xl">close</span>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
+          {downloadingZip && zipProgress && (
+            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  {zipProgress}
+                </p>
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-3">
