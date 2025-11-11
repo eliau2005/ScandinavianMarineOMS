@@ -18,6 +18,7 @@ import CreatePriceListModal from "../../priceList/CreatePriceListModal";
 import ArchiveModal from "../../priceList/ArchiveModal";
 import ConfirmationDialog from "../../common/ConfirmationDialog";
 import { createNotification } from "../../../lib/notificationService";
+import { userManagementService } from "../../../lib/userManagement";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PriceListPDFDocument from "../../pdf/PriceListPDFDocument";
 
@@ -272,12 +273,16 @@ const PriceListManagement = () => {
       });
 
       // Create notification for admins
-      await createNotification(
-        "price_list_pending_approval",
-        `Price list "${priceList.name}" from ${currentUser?.name} is pending approval`,
-        priceList.$id!,
-        currentUser?.name || "Unknown Supplier"
-      );
+      const adminIds = await userManagementService.getAdminUserIds();
+      for (const adminId of adminIds) {
+        await createNotification(
+          "price_list_pending_approval",
+          `Price list "${priceList.name}" from ${currentUser?.name} is pending approval`,
+          priceList.$id!,
+          currentUser?.name || "Unknown Supplier",
+          adminId
+        );
+      }
 
       await loadPriceLists();
       showNotification(

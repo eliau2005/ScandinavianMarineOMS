@@ -1,157 +1,83 @@
-import { ID, Query, Functions } from "appwrite";
-import { account, databases, appwriteConfig, client } from "./appwrite";
-
-const functions = new Functions(client);
-const USER_MANAGEMENT_FUNCTION_ID = "user-management"; // You'll need to create this function in Appwrite
+import { databases, appwriteConfig, account } from "./appwrite";
+import { Query, ID } from "appwrite";
 
 export type UserRole = "Admin" | "Supplier" | "Customer";
 
-export interface UserProfile {
-  $id: string;
-  userId: string;
+export interface UserWithEmail {
+  id: string;
+  email: string;
   username: string;
   role: UserRole;
-  $createdAt: string;
-  $updatedAt: string;
-}
-
-export interface UserWithEmail extends UserProfile {
-  email: string;
   emailVerification: boolean;
 }
 
-/**
- * Fetch all user profiles with their email information
- * This calls the Appwrite Function to get merged user data
- */
-export async function getAllUsers(): Promise<UserWithEmail[]> {
+export const userManagementService = {
+  async getAdminUserIds(): Promise<string[]> {
+    try {
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.profilesCollectionId,
+        [Query.equal("role", "Admin")]
+      );
+      return response.documents.map((doc) => doc.$id);
+    } catch (error) {
+      console.error("Error fetching admin users:", error);
+      throw error;
+    }
+  },
+};
+
+export const getAllUsers = async (): Promise<UserWithEmail[]> => {
   try {
-    // Call the Appwrite Function to list users
-    const response = await functions.createExecution(
-      USER_MANAGEMENT_FUNCTION_ID,
-      JSON.stringify({ action: "list" }),
-      false
+    const [users, profiles] = await Promise.all([
+      account.list(),
+      databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.profilesCollectionId,
+        [Query.limit(5000)]
+      ),
+    ]);
+
+    const profileMap = new Map(
+      profiles.documents.map((p) => [p.$id, p])
     );
 
-    if (response.responseStatusCode !== 200) {
-      throw new Error("Failed to fetch users");
-    }
-
-    const result = JSON.parse(response.responseBody);
-
-    if (!result.success) {
-      throw new Error(result.error || "Failed to fetch users");
-    }
-
-    return result.users;
+    return users.users.map((user) => {
+      const profile = profileMap.get(user.$id);
+      return {
+        id: user.$id,
+        email: user.email,
+        username: profile?.username || "N/A",
+        role: profile?.role || "Customer",
+        emailVerification: user.emailVerification,
+      };
+    });
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("Error fetching all users:", error);
     throw error;
   }
-}
+};
 
-/**
- * Create a new user with profile
- * Calls the Appwrite Function for server-side user creation
- */
-export async function createUser(
+export const createUser = async (
   email: string,
   password: string,
   username: string,
   role: UserRole
-): Promise<void> {
-  try {
-    const response = await functions.createExecution(
-      USER_MANAGEMENT_FUNCTION_ID,
-      JSON.stringify({
-        action: "create",
-        userData: { email, password, username, role },
-      }),
-      false
-    );
+): Promise<void> => {
+  // Implementation to be added
+};
 
-    if (response.responseStatusCode !== 200) {
-      const error = JSON.parse(response.responseBody);
-      throw new Error(error.error || "Failed to create user");
-    }
+export const updateUserProfile = async (
+  id: string,
+  updates: { username: string; role: UserRole }
+): Promise<void> => {
+  // Implementation to be added
+};
 
-    const result = JSON.parse(response.responseBody);
+export const deleteUser = async (id: string): Promise<void> => {
+  // Implementation to be added
+};
 
-    if (!result.success) {
-      throw new Error(result.error || "Failed to create user");
-    }
-  } catch (error) {
-    console.error("Error creating user:", error);
-    throw error;
-  }
-}
-
-/**
- * Update user profile
- */
-export async function updateUserProfile(
-  userId: string,
-  updates: { username?: string; role?: UserRole }
-): Promise<void> {
-  try {
-    console.log("Updating user profile:", userId, updates);
-    console.log("Database ID:", appwriteConfig.databaseId);
-    console.log("Collection ID:", appwriteConfig.profilesCollectionId);
-
-    const result = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.profilesCollectionId,
-      userId,
-      updates
-    );
-
-    console.log("Update successful:", result);
-  } catch (error: any) {
-    console.error("Error updating user:", error);
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
-    throw error;
-  }
-}
-
-/**
- * Delete user
- * Calls the Appwrite Function for server-side user deletion
- */
-export async function deleteUser(userId: string): Promise<void> {
-  try {
-    const response = await functions.createExecution(
-      USER_MANAGEMENT_FUNCTION_ID,
-      JSON.stringify({
-        action: "delete",
-        userData: { userId },
-      }),
-      false
-    );
-
-    if (response.responseStatusCode !== 200) {
-      throw new Error("Failed to delete user");
-    }
-
-    const result = JSON.parse(response.responseBody);
-
-    if (!result.success) {
-      throw new Error(result.error || "Failed to delete user");
-    }
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    throw error;
-  }
-}
-
-/**
- * Get current logged-in user
- */
-export async function getCurrentUser() {
-  try {
-    const user = await account.get();
-    return user;
-  } catch (error) {
-    return null;
-  }
-}
+export const getCurrentUser = async (): Promise<any> => {
+  return account.get();
+};

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import Modal from "../../common/Modal";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import OrderPDFDocument from "../../pdf/OrderPDFDocument";
+import OrderHistoryModal from "./OrderHistoryModal";
 
 interface OrderStats {
   all: number;
@@ -35,25 +36,38 @@ const IncomingOrders = () => {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadOrders();
+    const init = async () => {
+      try {
+        const user = await account.get();
+        setCurrentUserId(user.$id);
+        await loadOrders(user.$id);
+      } catch (error) {
+        console.error("Error initializing component:", error);
+        showNotification("error", "Failed to initialize");
+      }
+    };
+    init();
   }, []);
 
   useEffect(() => {
     calculateStats();
   }, [orders]);
 
-  const loadOrders = async () => {
+  const loadOrders = async (userId: string) => {
     setLoading(true);
     try {
-      const user = await account.get();
-      const ordersData = await orderService.getBySupplier(user.$id);
-      // Filter out orders with pending_approval status
-      const filteredOrders = ordersData.filter(
-        (order) => order.status !== "pending_approval"
+      const ordersData = await orderService.getBySupplier(userId);
+      const activeOrders = ordersData.filter(
+        (order) =>
+          order.status === "pending" ||
+          order.status === "confirmed" ||
+          order.status === "processing"
       );
-      setOrders(filteredOrders);
+      setOrders(activeOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
       showNotification("error", "Failed to load orders");
@@ -191,22 +205,31 @@ const IncomingOrders = () => {
             View and manage orders from your customers
           </p>
         </div>
-        {filteredOrders.length > 0 && (
-          <PDFDownloadLink
-            document={<OrderPDFDocument orders={filteredOrders} />}
-            fileName={`Supplier-Orders-${format(new Date(), "yyyy-MM-dd")}.pdf`}
-            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowOrderHistory(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            {({ loading }) => (
-              <>
-                <span className="material-symbols-outlined text-base">
-                  picture_as_pdf
-                </span>
-                <span>{loading ? "Generating..." : "Export Orders"}</span>
-              </>
-            )}
-          </PDFDownloadLink>
-        )}
+            <span className="material-symbols-outlined text-base">history</span>
+            <span>View Order History</span>
+          </button>
+          {filteredOrders.length > 0 && (
+            <PDFDownloadLink
+              document={<OrderPDFDocument orders={filteredOrders} />}
+              fileName={`Supplier-Orders-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+              className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+            >
+              {({ loading }) => (
+                <>
+                  <span className="material-symbols-outlined text-base">
+                    picture_as_pdf
+                  </span>
+                  <span>{loading ? "Generating..." : "Export Orders"}</span>
+                </>
+              )}
+            </PDFDownloadLink>
+          )}
+        </div>
       </div>
 
       {/* Status Filter Cards */}
@@ -530,6 +553,14 @@ const IncomingOrders = () => {
             )}
           </div>
         </Modal>
+      )}
+
+      {currentUserId && (
+        <OrderHistoryModal
+          isOpen={showOrderHistory}
+          onClose={() => setShowOrderHistory(false)}
+          supplierId={currentUserId}
+        />
       )}
     </div>
   );

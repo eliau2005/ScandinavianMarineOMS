@@ -9,6 +9,7 @@ import type { PriceListWithItems, PriceListTableRow } from "../../../types/price
 import type { CartItem, OrderItem } from "../../../types/order";
 import { generateOrderNumber } from "../../../types/order";
 import { createNotification } from "../../../lib/notificationService";
+import { userManagementService } from "../../../lib/userManagement";
 import Modal from "../../common/Modal";
 
 interface SupplierWithPriceList {
@@ -216,12 +217,16 @@ const PlaceOrder = () => {
       });
 
       // Create notification for admins
-      await createNotification(
-        "order_pending_approval",
-        `Order ${newOrder.order_number} from ${currentUser.name} is pending approval`,
-        newOrder.$id!,
-        currentUser.name
-      );
+      const adminIds = await userManagementService.getAdminUserIds();
+      for (const adminId of adminIds) {
+        await createNotification(
+          "order_pending_approval",
+          `Order ${newOrder.order_number} from ${currentUser.name} is pending approval`,
+          newOrder.$id!,
+          currentUser.name,
+          adminId
+        );
+      }
 
       toast.success("Order placed successfully and is pending admin approval!");
       setShowSummaryModal(false);

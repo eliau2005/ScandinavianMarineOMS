@@ -1,4 +1,4 @@
-import { ID, Permission, Role } from "appwrite";
+import { ID, Permission, Role, Query } from "appwrite";
 import { databases, appwriteConfig } from "./appwrite";
 
 // ============================================================================
@@ -7,10 +7,15 @@ import { databases, appwriteConfig } from "./appwrite";
 
 export interface Notification {
   $id?: string;
-  type: "order_pending_approval" | "price_list_pending_approval";
+  type:
+    | "order_pending_approval"
+    | "price_list_pending_approval"
+    | "price_list_approved"
+    | "order_status_changed";
   message: string;
-  related_item_id: string; // Order ID or Price List ID
+  related_item_id: string;
   created_by_name: string;
+  recipient_id: string; // User ID of the recipient
   is_read: boolean;
   $createdAt?: string;
   $updatedAt?: string;
@@ -22,17 +27,19 @@ export interface Notification {
 
 /**
  * Create a new notification
- * @param type - Type of notification (order_pending_approval or price_list_pending_approval)
+ * @param type - Type of notification
  * @param message - Notification message
- * @param related_item_id - ID of the related order or price list
+ * @param related_item_id - ID of the related item
  * @param created_by_name - Name of the user who triggered the notification
+ * @param recipient_id - User ID of the recipient
  * @returns The created notification document
  */
 export const createNotification = async (
-  type: "order_pending_approval" | "price_list_pending_approval",
+  type: Notification["type"],
   message: string,
   related_item_id: string,
-  created_by_name: string
+  created_by_name: string,
+  recipient_id: string
 ): Promise<Notification> => {
   try {
     const notification = await databases.createDocument(
@@ -44,12 +51,13 @@ export const createNotification = async (
         message,
         related_item_id,
         created_by_name,
+        recipient_id,
         is_read: false,
       },
       [
-        Permission.read(Role.any()), // All authenticated users can read
-        Permission.update(Role.any()), // All authenticated users can update (mark as read)
-        Permission.delete(Role.any()), // All authenticated users can delete
+        Permission.read(Role.user(recipient_id)),
+        Permission.update(Role.user(recipient_id)),
+        Permission.delete(Role.user(recipient_id)),
       ]
     );
 
@@ -61,22 +69,24 @@ export const createNotification = async (
 };
 
 /**
- * Get all unread notifications
+ * Get all unread notifications for a specific user
+ * @param userId - The ID of the user to fetch notifications for
  * @returns Array of unread notifications
  */
-export const getUnreadNotifications = async (): Promise<Notification[]> => {
+export const getUnreadNotifications = async (
+  userId: string
+): Promise<Notification[]> => {
   try {
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId
+      appwriteConfig.notificationsCollectionId,
+      [
+        Query.equal("recipient_id", userId),
+        Query.equal("is_read", false),
+        Query.orderDesc("$createdAt"),
+      ]
     );
-
-    // Filter for unread notifications
-    const unreadNotifications = response.documents.filter(
-      (doc) => doc.is_read === false
-    );
-
-    return unreadNotifications as Notification[];
+    return response.documents as Notification[];
   } catch (error) {
     console.error("Error fetching unread notifications:", error);
     throw error;
