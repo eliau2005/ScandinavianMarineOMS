@@ -39,13 +39,12 @@ const PriceListManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [createDraftConfirm, setCreateDraftConfirm] = useState<PriceList | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [currentUser, setCurrentUser] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const [lastEditRequestTime, setLastEditRequestTime] = useState<number | null>(null);
-  const [canRequestEdit, setCanRequestEdit] = useState(true);
 
   // Load current user
   useEffect(() => {
@@ -70,6 +69,11 @@ const PriceListManagement = () => {
       loadPriceLists();
     }
   }, [currentUser]);
+
+  // Compute draft count and pending approval status
+  const draftCount = priceLists.filter((pl) => pl.status === "draft").length;
+  const hasReachedDraftLimit = draftCount >= 10;
+  const hasPendingApproval = priceLists.some((pl) => pl.status === "pending_approval");
 
   const loadPriceLists = async () => {
     if (!currentUser) return;
@@ -240,6 +244,26 @@ const PriceListManagement = () => {
     }
   };
 
+  const handleCreateNewDraft = async () => {
+    if (!createDraftConfirm) return;
+
+    try {
+      // Check draft limit before creating
+      if (hasReachedDraftLimit) {
+        showNotification("error", "You have reached the maximum limit of 10 drafts.");
+        setCreateDraftConfirm(null);
+        return;
+      }
+
+      // Duplicate the active price list to create a new draft
+      await handleDuplicatePriceList(createDraftConfirm);
+      setCreateDraftConfirm(null);
+    } catch (error) {
+      console.error("Error creating new draft:", error);
+      showNotification("error", "Failed to create new draft");
+    }
+  };
+
   const handleSetActive = async (priceList: PriceList) => {
     try {
       // Update status to pending_approval instead of activating directly
@@ -286,44 +310,6 @@ const PriceListManagement = () => {
     }
   };
 
-  const handleRequestEdit = async () => {
-    if (!selectedPriceList || !currentUser) return;
-
-    // Check if an edit request was sent in the last hour
-    const now = Date.now();
-    if (lastEditRequestTime && now - lastEditRequestTime < 60 * 60 * 1000) {
-      const minutesLeft = Math.ceil((60 * 60 * 1000 - (now - lastEditRequestTime)) / (1000 * 60));
-      showNotification(
-        "error",
-        `You can only send one edit request per hour. Please wait ${minutesLeft} more minute(s).`
-      );
-      return;
-    }
-
-    try {
-      // Create notification for admins
-      await createNotification(
-        "price_list_pending_approval",
-        `Edit request for price list "${selectedPriceList.name}" from ${currentUser.name}`,
-        selectedPriceList.$id!,
-        currentUser.name
-      );
-
-      setLastEditRequestTime(now);
-      setCanRequestEdit(false);
-
-      // Re-enable after 1 hour
-      setTimeout(() => {
-        setCanRequestEdit(true);
-      }, 60 * 60 * 1000);
-
-      showNotification("success", "Edit request sent to admin successfully");
-    } catch (error) {
-      console.error("Error sending edit request:", error);
-      showNotification("error", "Failed to send edit request");
-    }
-  };
-
   const handlePriceChange = (
     productId: string,
     field: "price_box" | "price_box_vac",
@@ -357,22 +343,6 @@ const PriceListManagement = () => {
     if (selectedPriceList.status !== "draft") {
       showNotification("error", "Only draft price lists can be edited");
       return;
-    }
-
-    // Check 24-hour cooldown
-    if (selectedPriceList.$updatedAt) {
-      const lastUpdated = new Date(selectedPriceList.$updatedAt);
-      const now = new Date();
-      const hoursSinceUpdate = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
-
-      if (hoursSinceUpdate < 24) {
-        const hoursLeft = Math.ceil(24 - hoursSinceUpdate);
-        showNotification(
-          "error",
-          `You can only edit this price list once every 24 hours. Please wait ${hoursLeft} more hour(s).`
-        );
-        return;
-      }
     }
 
     setSaving(true);
@@ -440,8 +410,20 @@ const PriceListManagement = () => {
             <span>Show Archive</span>
           </button>
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+            onClick={() => {
+              if (hasReachedDraftLimit) {
+                showNotification("error", "You have reached the maximum limit of 10 drafts.");
+                return;
+              }
+              setShowCreateModal(true);
+            }}
+            disabled={hasReachedDraftLimit}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              hasReachedDraftLimit
+                ? "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
+                : "bg-supplier-accent text-white hover:bg-opacity-90"
+            }`}
+            title={hasReachedDraftLimit ? "You have reached the maximum limit of 10 drafts" : ""}
           >
             <span className="material-symbols-outlined text-base">add</span>
             <span>New Price List</span>
@@ -482,6 +464,9 @@ const PriceListManagement = () => {
               onDuplicate={() => handleDuplicatePriceList(priceList)}
               onSetActive={() => handleSetActive(priceList)}
               onCancelRequest={() => handleCancelRequest(priceList)}
+              onCreateNewDraft={() => setCreateDraftConfirm(priceList)}
+              disableSetActive={hasPendingApproval && priceList.status === "draft"}
+              disableSetActiveReason="You can only have one price list pending approval at a time"
             />
           ))}
         </div>
@@ -614,30 +599,6 @@ const PriceListManagement = () => {
                       )}
 
                     </PDFDownloadLink>
-
-                  )}
-
-                  {selectedPriceList?.status === "active" && (
-
-                    <button
-
-                      onClick={handleRequestEdit}
-
-                      disabled={!canRequestEdit}
-
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-
-                    >
-
-                      <span className="material-symbols-outlined text-base">
-
-                        edit_note
-
-                      </span>
-
-                      <span>Request Edit</span>
-
-                    </button>
 
                   )}
 
@@ -1186,6 +1147,17 @@ const PriceListManagement = () => {
         message="Are you sure you want to delete this price list? This action cannot be undone."
         confirmText="Delete"
         confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
+
+      {/* Create New Draft Confirmation */}
+      <ConfirmationDialog
+        isOpen={createDraftConfirm !== null}
+        onClose={() => setCreateDraftConfirm(null)}
+        onConfirm={handleCreateNewDraft}
+        title="Create New Draft?"
+        message={`This will create a new draft based on "${createDraftConfirm?.name}". You can then edit the new draft as needed.`}
+        confirmText="Create Draft"
+        confirmButtonClass="bg-blue-600 hover:bg-blue-700"
       />
     </>
   );

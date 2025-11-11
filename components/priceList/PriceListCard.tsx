@@ -10,6 +10,9 @@ interface PriceListCardProps {
   onDuplicate?: () => void;
   onSetActive?: () => void;
   onCancelRequest?: () => void;
+  onCreateNewDraft?: () => void;
+  disableSetActive?: boolean;
+  disableSetActiveReason?: string;
 }
 
 const PriceListCard: React.FC<PriceListCardProps> = ({
@@ -20,6 +23,9 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
   onDuplicate,
   onSetActive,
   onCancelRequest,
+  onCreateNewDraft,
+  disableSetActive = false,
+  disableSetActiveReason,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,9 +145,14 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
           )}
           {onSetActive && priceList.status === "draft" && (
             <button
-              onClick={onSetActive}
-              className="px-3 py-2 text-sm font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
-              title="Set Active"
+              onClick={disableSetActive ? undefined : onSetActive}
+              disabled={disableSetActive}
+              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                disableSetActive
+                  ? "text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                  : "text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800"
+              }`}
+              title={disableSetActive ? disableSetActiveReason : "Set Active"}
             >
               <span className="material-symbols-outlined text-base">
                 check_circle
@@ -158,6 +169,18 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
                 cancel
               </span>
               <span>Cancel Request</span>
+            </button>
+          )}
+          {onCreateNewDraft && priceList.status === "active" && (
+            <button
+              onClick={onCreateNewDraft}
+              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+              title="Create New Draft"
+            >
+              <span className="material-symbols-outlined text-base">
+                content_copy
+              </span>
+              <span>Create New Draft</span>
             </button>
           )}
           {onDelete && priceList.status === "draft" && (
