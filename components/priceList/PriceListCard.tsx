@@ -9,6 +9,7 @@ interface PriceListCardProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   onSetActive?: () => void;
+  onCancelRequest?: () => void;
 }
 
 const PriceListCard: React.FC<PriceListCardProps> = ({
@@ -18,6 +19,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
   onDelete,
   onDuplicate,
   onSetActive,
+  onCancelRequest,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -146,7 +148,19 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
               </span>
             </button>
           )}
-          {onDelete && priceList.status !== "active" && (
+          {onCancelRequest && priceList.status === "pending_approval" && (
+            <button
+              onClick={onCancelRequest}
+              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+              title="Cancel Approval Request"
+            >
+              <span className="material-symbols-outlined text-base">
+                cancel
+              </span>
+              <span>Cancel Request</span>
+            </button>
+          )}
+          {onDelete && priceList.status === "draft" && (
             <button
               onClick={onDelete}
               className="px-3 py-2 text-sm font-medium text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors"

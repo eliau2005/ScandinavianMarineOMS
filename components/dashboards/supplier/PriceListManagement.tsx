@@ -15,6 +15,7 @@ import type {
 import PriceListProductTable from "../../priceList/PriceListProductTable";
 import PriceListCard from "../../priceList/PriceListCard";
 import CreatePriceListModal from "../../priceList/CreatePriceListModal";
+import ArchiveModal from "../../priceList/ArchiveModal";
 import ConfirmationDialog from "../../common/ConfirmationDialog";
 import { createNotification } from "../../../lib/notificationService";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -36,6 +37,7 @@ const PriceListManagement = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [currentUser, setCurrentUser] = useState<{
@@ -75,7 +77,9 @@ const PriceListManagement = () => {
     setLoading(true);
     try {
       const lists = await priceListService.getBySupplier(currentUser.id);
-      setPriceLists(lists);
+      // Filter out archived price lists - they should only appear in the archive modal
+      const activeLists = lists.filter((list) => list.status !== "archived");
+      setPriceLists(activeLists);
     } catch (error) {
       console.error("Error loading price lists:", error);
       showNotification("error", "Failed to load price lists");
@@ -129,12 +133,46 @@ const PriceListManagement = () => {
   };
 
   const handleCreatePriceList = async (data: Omit<PriceList, "$id">) => {
-    const newList = await priceListService.create(data);
-    await loadPriceLists();
-    showNotification("success", "Price list created successfully");
-    // Open the new price list for editing
-    setView("edit");
-    await loadPriceListDetails(newList.$id!);
+    try {
+      // Find the most recent price list (regardless of status)
+      const mostRecentList = priceLists.length > 0
+        ? priceLists.reduce((latest, current) => {
+            const latestDate = new Date(latest.$createdAt || latest.effective_date);
+            const currentDate = new Date(current.$createdAt || current.effective_date);
+            return currentDate > latestDate ? current : latest;
+          })
+        : null;
+
+      let newList: PriceList;
+
+      if (mostRecentList) {
+        // Duplicate the most recent price list with new dates and status
+        newList = await priceListService.duplicate(
+          mostRecentList.$id!,
+          data.effective_date,
+          data.expiry_date!
+        );
+
+        // Update the name to match the user's input
+        if (data.name !== newList.name) {
+          newList = await priceListService.update(newList.$id!, {
+            name: data.name,
+          });
+        }
+      } else {
+        // No existing price lists, create a new empty one
+        newList = await priceListService.create(data);
+      }
+
+      await loadPriceLists();
+      showNotification("success", "Price list created successfully");
+      // Open the new price list for editing
+      setView("edit");
+      await loadPriceListDetails(newList.$id!);
+    } catch (error) {
+      console.error("Error creating price list:", error);
+      showNotification("error", "Failed to create price list");
+    }
   };
 
   const handleViewPriceList = async (priceList: PriceList) => {
@@ -149,6 +187,25 @@ const PriceListManagement = () => {
 
   const handleDeletePriceList = async (priceListId: string) => {
     try {
+      // Get the price list to check its status
+      const priceList = priceLists.find((pl) => pl.$id === priceListId);
+
+      if (!priceList) {
+        showNotification("error", "Price list not found");
+        setDeleteConfirm(null);
+        return;
+      }
+
+      // Only allow deletion of draft price lists
+      if (priceList.status !== "draft") {
+        showNotification(
+          "error",
+          `Cannot delete ${priceList.status === "pending_approval" ? "pending approval" : priceList.status} price lists. Only draft price lists can be deleted.`
+        );
+        setDeleteConfirm(null);
+        return;
+      }
+
       await priceListService.delete(priceListId);
       await loadPriceLists();
       showNotification("success", "Price list deleted successfully");
@@ -211,6 +268,24 @@ const PriceListManagement = () => {
     }
   };
 
+  const handleCancelRequest = async (priceList: PriceList) => {
+    try {
+      // Update status from pending_approval back to draft
+      await priceListService.update(priceList.$id!, {
+        status: "draft",
+      });
+
+      await loadPriceLists();
+      showNotification(
+        "success",
+        "Approval request cancelled. Price list is now back in draft status."
+      );
+    } catch (error) {
+      console.error("Error cancelling approval request:", error);
+      showNotification("error", "Failed to cancel approval request");
+    }
+  };
+
   const handleRequestEdit = async () => {
     if (!selectedPriceList || !currentUser) return;
 
@@ -262,6 +337,17 @@ const PriceListManagement = () => {
         return row;
       })
     );
+  };
+
+  const handleClearAllPrices = () => {
+    setTableData((prev) =>
+      prev.map((row) => ({
+        ...row,
+        price_box: null,
+        price_box_vac: null,
+      }))
+    );
+    showNotification("info", "All prices have been cleared");
   };
 
   const handleSavePrices = async () => {
@@ -345,13 +431,22 @@ const PriceListManagement = () => {
             Manage your product pricing and update price lists
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          <span>New Price List</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowArchiveModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">inventory_2</span>
+            <span>Show Archive</span>
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            <span>New Price List</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -386,6 +481,7 @@ const PriceListManagement = () => {
               onDelete={() => setDeleteConfirm(priceList.$id!)}
               onDuplicate={() => handleDuplicatePriceList(priceList)}
               onSetActive={() => handleSetActive(priceList)}
+              onCancelRequest={() => handleCancelRequest(priceList)}
             />
           ))}
         </div>
@@ -465,7 +561,13 @@ const PriceListManagement = () => {
 
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
 
-                    {selectedPriceList?.status === "draft" ? "Edit prices for this list" : "View-only mode (not draft)"}
+                    {selectedPriceList?.status === "draft"
+                      ? "Edit prices for this list"
+                      : selectedPriceList?.status === "pending_approval"
+                      ? "Pending approval - View-only mode"
+                      : selectedPriceList?.status === "active"
+                      ? "Active price list - View-only mode"
+                      : "Archived - View-only mode"}
 
                   </p>
 
@@ -539,31 +641,75 @@ const PriceListManagement = () => {
 
                   )}
 
-                  {selectedPriceList?.status === "draft" && (
+                  {selectedPriceList?.status === "pending_approval" && (
 
                     <button
 
-                      onClick={handleSavePrices}
+                      onClick={() => selectedPriceList && handleCancelRequest(selectedPriceList)}
 
-                      disabled={saving}
-
-                      className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
 
                     >
 
-                      {saving && (
+                      <span className="material-symbols-outlined text-base">
 
-                        <span className="animate-spin material-symbols-outlined text-base">
+                        cancel
 
-                          progress_activity
+                      </span>
+
+                      <span>Cancel Request</span>
+
+                    </button>
+
+                  )}
+
+                  {selectedPriceList?.status === "draft" && (
+
+                    <>
+
+                      <button
+
+                        onClick={handleClearAllPrices}
+
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+
+                      >
+
+                        <span className="material-symbols-outlined text-base">
+
+                          clear_all
 
                         </span>
 
-                      )}
+                        <span>Clear All Prices</span>
 
-                      <span>{saving ? "Saving..." : "Save Prices"}</span>
+                      </button>
 
-                    </button>
+                      <button
+
+                        onClick={handleSavePrices}
+
+                        disabled={saving}
+
+                        className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+
+                      >
+
+                        {saving && (
+
+                          <span className="animate-spin material-symbols-outlined text-base">
+
+                            progress_activity
+
+                          </span>
+
+                        )}
+
+                        <span>{saving ? "Saving..." : "Save Prices"}</span>
+
+                      </button>
+
+                    </>
 
                   )}
 
@@ -1018,6 +1164,16 @@ const PriceListManagement = () => {
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreatePriceList}
           supplierInfo={currentUser}
+        />
+      )}
+
+      {/* Archive Modal */}
+      {currentUser && (
+        <ArchiveModal
+          isOpen={showArchiveModal}
+          onClose={() => setShowArchiveModal(false)}
+          supplierId={currentUser.id}
+          onViewPriceList={handleViewPriceList}
         />
       )}
 

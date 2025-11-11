@@ -51,20 +51,25 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                       {row.product.unit_of_measure}
                     </span>
-                    <input
-                      type="number"
-                      value={row.price_box || ""}
-                      onChange={(e) =>
-                        onPriceChange(
-                          row.product.$id!,
-                          "price_box",
-                          parseFloat(e.target.value)
-                        )
-                      }
-                      disabled={!editable}
-                      className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-                      placeholder="Price"
-                    />
+                    {editable ? (
+                      <input
+                        type="number"
+                        value={row.price_box || ""}
+                        onChange={(e) =>
+                          onPriceChange(
+                            row.product.$id!,
+                            "price_box",
+                            parseFloat(e.target.value)
+                          )
+                        }
+                        className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                        placeholder="Price"
+                      />
+                    ) : (
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">
+                        {row.price_box !== null ? `€ ${row.price_box.toFixed(2)}` : "-"}
+                      </span>
+                    )}
                   </div>
                 </td>
               </tr>
