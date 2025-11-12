@@ -1,29 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { account } from "../../../lib/appwrite";
-import { getNotificationsForCustomer, markAsRead, type Notification } from "../../../lib/notificationService";
+import { type Notification } from "../../../lib/notificationService";
 import { format } from "date-fns";
+import { useCustomerNotifications, useMarkNotificationAsRead } from "../../../lib/hooks/useNotifications";
 
 interface CustomerNotificationPanelProps {
   onNotificationClick?: (notification: Notification) => void;
 }
 
 const CustomerNotificationPanel: React.FC<CustomerNotificationPanelProps> = ({ onNotificationClick }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Use React Query for notifications
+  const { data: notifications = [], isLoading: loading } = useCustomerNotifications(currentUserId);
+  const markAsReadMutation = useMarkNotificationAsRead();
 
   useEffect(() => {
     loadCurrentUser();
   }, []);
-
-  useEffect(() => {
-    if (currentUserId) {
-      loadNotifications();
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(loadNotifications, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [currentUserId]);
 
   const loadCurrentUser = async () => {
     try {
@@ -34,38 +28,11 @@ const CustomerNotificationPanel: React.FC<CustomerNotificationPanelProps> = ({ o
     }
   };
 
-  const loadNotifications = async () => {
-    try {
-      if (!currentUserId) return;
-
-      // Fetch notifications for this customer
-      const customerNotifications = await getNotificationsForCustomer(currentUserId);
-
-      // Customer sees ONLY approved notifications:
-      // - order_approved (their orders that were approved)
-      // - price_list_approved (new price lists from their suppliers)
-      // NOT order_pending_approval (they know they placed the order)
-      const filteredNotifications = customerNotifications.filter(
-        (notification) =>
-          notification.type === "order_approved" ||
-          notification.type === "price_list_approved"
-      );
-
-      setNotifications(filteredNotifications);
-    } catch (error) {
-      console.error("Error loading notifications:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleNotificationClick = async (notification: Notification) => {
     try {
       // Mark as read
       if (notification.$id) {
-        await markAsRead(notification.$id);
-        // Remove from local state
-        setNotifications((prev) => prev.filter((n) => n.$id !== notification.$id));
+        await markAsReadMutation.mutateAsync(notification.$id);
       }
 
       // Call parent handler if provided

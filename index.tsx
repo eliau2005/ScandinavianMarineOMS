@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { account, databases, appwriteConfig } from "./lib/appwrite";
 import { Models } from "appwrite";
 import Login from "./components/Login";
 import AdminDashboard from "./components/dashboards/AdminDashboard";
 import CustomerDashboard from "./components/dashboards/CustomerDashboard";
 import SupplierDashboard from "./components/dashboards/SupplierDashboard";
+
+// Create a React Query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 type UserRole = "Admin" | "Supplier" | "Customer";
 
@@ -75,4 +86,8 @@ const App = () => {
 
 const container = document.getElementById("root");
 const root = createRoot(container!);
-root.render(<App />);
+root.render(
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>
+);

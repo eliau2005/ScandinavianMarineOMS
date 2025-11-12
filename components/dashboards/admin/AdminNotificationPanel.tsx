@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { getUnreadNotifications, markAsRead, type Notification } from "../../../lib/notificationService";
+import React, { useState } from "react";
+import { type Notification } from "../../../lib/notificationService";
 import { orderService } from "../../../lib/orderService";
 import { priceListService } from "../../../lib/priceListService";
 import NotificationActionModal from "../../common/NotificationActionModal";
 import { format } from "date-fns";
+import { useAdminNotifications, useMarkNotificationAsRead, useInvalidateNotifications } from "../../../lib/hooks/useNotifications";
 
 interface AdminNotificationPanelProps {
   onNotificationClick?: (notification: Notification) => void;
@@ -14,35 +15,14 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({
   onNotificationClick,
   onViewItem
 }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    loadNotifications();
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadNotifications = async () => {
-    try {
-      const unreadNotifications = await getUnreadNotifications();
-      // Admin sees ONLY pending approval notifications
-      const adminNotifications = unreadNotifications.filter(
-        (notification) =>
-          notification.type === "order_pending_approval" ||
-          notification.type === "price_list_pending_approval"
-      );
-      setNotifications(adminNotifications);
-    } catch (error) {
-      console.error("Error loading notifications:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use React Query for notifications
+  const { data: notifications = [], isLoading: loading } = useAdminNotifications();
+  const markAsReadMutation = useMarkNotificationAsRead();
+  const invalidateNotifications = useInvalidateNotifications();
 
   const handleNotificationClick = (notification: Notification) => {
     setSelectedNotification(notification);
@@ -67,20 +47,15 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({
 
       // Mark notification as read
       if (selectedNotification.$id) {
-        await markAsRead(selectedNotification.$id);
+        await markAsReadMutation.mutateAsync(selectedNotification.$id);
       }
-
-      // Remove from local state
-      setNotifications((prev) =>
-        prev.filter((n) => n.$id !== selectedNotification.$id)
-      );
 
       // Close modal
       setShowActionModal(false);
       setSelectedNotification(null);
 
-      // Reload notifications
-      await loadNotifications();
+      // Invalidate notifications to trigger refetch
+      invalidateNotifications();
     } catch (error) {
       console.error("Error approving:", error);
       alert("Failed to approve. Please try again.");
@@ -89,16 +64,12 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({
     }
   };
 
-  const handleView = () => {
+  const handleView = async () => {
     if (!selectedNotification) return;
 
     // Mark as read
     if (selectedNotification.$id) {
-      markAsRead(selectedNotification.$id).then(() => {
-        setNotifications((prev) =>
-          prev.filter((n) => n.$id !== selectedNotification.$id)
-        );
-      });
+      await markAsReadMutation.mutateAsync(selectedNotification.$id);
     }
 
     // Close action modal
