@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { account } from "../../lib/appwrite";
 import PriceListManagement from "./supplier/PriceListManagement";
+import NewOrdersView from "./supplier/NewOrdersView";
 import IncomingOrders from "./supplier/IncomingOrders";
 import ProductManagement from "./supplier/ProductManagement";
 import SupplierNotificationPanel from "./supplier/SupplierNotificationPanel";
 import type { Notification } from "../../lib/notificationService";
 
-type SupplierView = "dashboard" | "orders" | "pricing" | "products";
+type SupplierView = "dashboard" | "orders" | "history" | "pricing" | "products";
 
 const SupplierDashboard = () => {
   const [activeView, setActiveView] = useState<SupplierView>("dashboard");
@@ -27,7 +28,7 @@ const SupplierDashboard = () => {
       // Navigate to price lists
       setActiveView("pricing");
     } else if (notification.type === "order_pending_approval") {
-      // Navigate to incoming orders
+      // Navigate to new orders
       setActiveView("orders");
     }
   };
@@ -50,7 +51,7 @@ const SupplierDashboard = () => {
 
               {/* Quick Actions Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Incoming Orders */}
+                {/* New Orders */}
                 <button
                   onClick={() => setActiveView("orders")}
                   className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-supplier-accent"
@@ -63,10 +64,37 @@ const SupplierDashboard = () => {
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Incoming Orders
+                        New Orders
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        View and manage orders from your customers
+                        View and manage active orders from your customers
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-4">
+                    <span className="material-symbols-outlined text-2xl text-supplier-accent group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </div>
+                </button>
+
+                {/* Order History */}
+                <button
+                  onClick={() => setActiveView("history")}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-supplier-accent"
+                >
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-supplier-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
+                      <span className="material-symbols-outlined text-4xl text-supplier-accent">
+                        history
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                        Order History
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        View complete order history and analytics
                       </p>
                     </div>
                   </div>
@@ -142,6 +170,8 @@ const SupplierDashboard = () => {
       case "products":
         return <ProductManagement />;
       case "orders":
+        return <NewOrdersView />;
+      case "history":
         return <IncomingOrders />;
       case "pricing":
         return <PriceListManagement />;

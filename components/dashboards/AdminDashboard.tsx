@@ -5,8 +5,10 @@ import SupplierCustomerAssociations from "./admin/SupplierCustomerAssociations";
 import OrdersOverview from "./admin/OrdersOverview";
 import AllPriceLists from "./admin/AllPriceLists";
 import NotificationsModal from "./admin/NotificationsModal";
+import AdminNotificationPanel from "./admin/AdminNotificationPanel";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import type { Notification } from "../../lib/notificationService";
 
 type AdminView = "dashboard" | "users" | "associations" | "orders" | "pricing";
 
@@ -29,6 +31,17 @@ const AdminDashboard = () => {
 
   const handleDrawerToggle = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Handle notification click based on type
+    if (notification.type === "price_list_pending_approval") {
+      // Navigate to price lists
+      setActiveView("pricing");
+    } else if (notification.type === "order_pending_approval") {
+      // Navigate to orders
+      setActiveView("orders");
+    }
   };
 
   const navLinks: { id: AdminView; label: string; disabled: boolean }[] = [
@@ -56,76 +69,133 @@ const AdminDashboard = () => {
       case "dashboard":
       default:
         return (
-          <div className="flex flex-1 flex-col p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                Quick Actions
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Manage your system efficiently
-              </p>
+          <div className="flex flex-1 gap-6 p-6">
+            {/* Main Quick Actions Area */}
+            <div className="flex-1">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                  Welcome to Admin Panel
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                  Quick actions to manage your system efficiently
+                </p>
+              </div>
+
+              {/* Quick Actions Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Manage Users */}
+                <button
+                  onClick={() => setActiveView("users")}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
+                >
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
+                      <span className="material-symbols-outlined text-4xl text-admin-accent">
+                        group
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                        Manage Users
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Create and manage users in the system
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-4">
+                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </div>
+                </button>
+
+                {/* Manage Orders */}
+                <button
+                  onClick={() => setActiveView("orders")}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
+                >
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
+                      <span className="material-symbols-outlined text-4xl text-admin-accent">
+                        shopping_cart
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                        Manage Orders
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        View and manage all system orders
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-4">
+                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </div>
+                </button>
+
+                {/* Manage Price Lists */}
+                <button
+                  onClick={() => setActiveView("pricing")}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
+                >
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
+                      <span className="material-symbols-outlined text-4xl text-admin-accent">
+                        receipt_long
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                        Manage Price Lists
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Review and approve supplier price lists
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-4">
+                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </div>
+                </button>
+
+                {/* Associate Customers with Suppliers */}
+                <button
+                  onClick={() => setActiveView("associations")}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
+                >
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
+                      <span className="material-symbols-outlined text-4xl text-admin-accent">
+                        link
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                        Associate Customers
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Link customers with suppliers for ordering
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 right-4">
+                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
+                      arrow_forward
+                    </span>
+                  </div>
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
-              {/* Create New User */}
-              <button
-                onClick={() => setActiveView("users")}
-                className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-8 border-2 border-transparent hover:border-admin-accent"
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 bg-admin-accent/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-4xl text-admin-accent">
-                      person_add
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Create New User
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Add new users to the system and manage their roles
-                  </p>
-                </div>
-              </button>
-
-              {/* Create Association */}
-              <button
-                onClick={() => setActiveView("associations")}
-                className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-8 border-2 border-transparent hover:border-admin-accent"
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 bg-admin-accent/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-4xl text-admin-accent">
-                      link
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Create Association
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Link customers with suppliers for ordering
-                  </p>
-                </div>
-              </button>
-
-              {/* View New Notifications */}
-              <button
-                onClick={() => setShowNotificationsModal(true)}
-                className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-8 border-2 border-transparent hover:border-admin-accent"
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-20 h-20 bg-admin-accent/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-4xl text-admin-accent">
-                      notifications_active
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    View New Notifications
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Review and approve pending orders and price lists
-                  </p>
-                </div>
-              </button>
+            {/* Notification Panel - Right Side */}
+            <div className="hidden lg:block w-96">
+              <AdminNotificationPanel onNotificationClick={handleNotificationClick} />
             </div>
           </div>
         );
@@ -209,7 +279,7 @@ const AdminDashboard = () => {
       >
         {drawer}
       </Drawer>
-      <main className="flex flex-1 flex-col overflow-y-auto">
+      <main className="flex flex-1 overflow-hidden">
         {renderContent()}
       </main>
 
