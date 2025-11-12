@@ -7,13 +7,13 @@ import { format } from "date-fns";
 import Modal from "../../common/Modal";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import OrderPDFDocument from "../../pdf/OrderPDFDocument";
+import OrderHistoryModal from "./OrderHistoryModal";
 
 interface OrderStats {
   all: number;
   pending: number;
   confirmed: number;
   processing: number;
-  shipped: number;
 }
 
 const IncomingOrders = () => {
@@ -28,8 +28,8 @@ const IncomingOrders = () => {
     pending: 0,
     confirmed: 0,
     processing: 0,
-    shipped: 0,
   });
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error";
@@ -49,11 +49,14 @@ const IncomingOrders = () => {
     try {
       const user = await account.get();
       const ordersData = await orderService.getBySupplier(user.$id);
-      // Filter out orders with pending_approval status
-      const filteredOrders = ordersData.filter(
-        (order) => order.status !== "pending_approval"
+      // Filter for active orders only (pending, confirmed, processing)
+      const activeOrders = ordersData.filter(
+        (order) =>
+          order.status === "pending" ||
+          order.status === "confirmed" ||
+          order.status === "processing"
       );
-      setOrders(filteredOrders);
+      setOrders(activeOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
       showNotification("error", "Failed to load orders");
@@ -68,14 +71,12 @@ const IncomingOrders = () => {
       pending: 0,
       confirmed: 0,
       processing: 0,
-      shipped: 0,
     };
 
     orders.forEach((order) => {
       if (order.status === "pending") newStats.pending++;
       else if (order.status === "confirmed") newStats.confirmed++;
       else if (order.status === "processing") newStats.processing++;
-      else if (order.status === "shipped") newStats.shipped++;
     });
 
     setStats(newStats);
@@ -154,14 +155,6 @@ const IncomingOrders = () => {
       color: "border-purple-500",
       bgColor: "bg-purple-50 dark:bg-purple-900/20",
     },
-    {
-      status: "shipped" as const,
-      label: "Shipped",
-      count: stats.shipped,
-      icon: "local_shipping",
-      color: "border-indigo-500",
-      bgColor: "bg-indigo-50 dark:bg-indigo-900/20",
-    },
   ];
 
   return (
@@ -188,29 +181,38 @@ const IncomingOrders = () => {
             Incoming Orders
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            View and manage orders from your customers
+            View and manage active orders from your customers
           </p>
         </div>
-        {filteredOrders.length > 0 && (
-          <PDFDownloadLink
-            document={<OrderPDFDocument orders={filteredOrders} />}
-            fileName={`Supplier-Orders-${format(new Date(), "yyyy-MM-dd")}.pdf`}
-            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
-            {({ loading }) => (
-              <>
-                <span className="material-symbols-outlined text-base">
-                  picture_as_pdf
-                </span>
-                <span>{loading ? "Generating..." : "Export Orders"}</span>
-              </>
-            )}
-          </PDFDownloadLink>
-        )}
+            <span className="material-symbols-outlined text-base">history</span>
+            <span>View Order History</span>
+          </button>
+          {filteredOrders.length > 0 && (
+            <PDFDownloadLink
+              document={<OrderPDFDocument orders={filteredOrders} />}
+              fileName={`Supplier-Orders-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+              className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+            >
+              {({ loading }) => (
+                <>
+                  <span className="material-symbols-outlined text-base">
+                    picture_as_pdf
+                  </span>
+                  <span>{loading ? "Generating..." : "Export Orders"}</span>
+                </>
+              )}
+            </PDFDownloadLink>
+          )}
+        </div>
       </div>
 
       {/* Status Filter Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {statusCards.map((card) => (
           <button
             key={card.status}
@@ -531,6 +533,12 @@ const IncomingOrders = () => {
           </div>
         </Modal>
       )}
+
+      {/* Order History Modal */}
+      <OrderHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+      />
     </div>
   );
 };
