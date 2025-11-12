@@ -30,8 +30,13 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({
   const loadNotifications = async () => {
     try {
       const unreadNotifications = await getUnreadNotifications();
-      // Admin sees all unread notifications (order and price list approvals)
-      setNotifications(unreadNotifications);
+      // Admin sees ONLY pending approval notifications
+      const adminNotifications = unreadNotifications.filter(
+        (notification) =>
+          notification.type === "order_pending_approval" ||
+          notification.type === "price_list_pending_approval"
+      );
+      setNotifications(adminNotifications);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {

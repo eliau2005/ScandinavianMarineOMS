@@ -40,7 +40,16 @@ const SupplierNotificationPanel: React.FC<SupplierNotificationPanelProps> = ({ o
 
       // Fetch notifications filtered for this supplier
       const supplierNotifications = await getNotificationsForSupplier(currentUserId);
-      setNotifications(supplierNotifications);
+
+      // Supplier sees ONLY approved notifications (order_approved, price_list_approved)
+      // NOT pending approvals
+      const filteredNotifications = supplierNotifications.filter(
+        (notification) =>
+          notification.type === "order_approved" ||
+          notification.type === "price_list_approved"
+      );
+
+      setNotifications(filteredNotifications);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {

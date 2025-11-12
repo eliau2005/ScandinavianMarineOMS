@@ -39,12 +39,19 @@ const CustomerNotificationPanel: React.FC<CustomerNotificationPanelProps> = ({ o
       if (!currentUserId) return;
 
       // Fetch notifications for this customer
-      // This includes:
-      // - order_pending_approval (customer's own orders)
-      // - price_list_approved (approved price lists from their suppliers)
       const customerNotifications = await getNotificationsForCustomer(currentUserId);
 
-      setNotifications(customerNotifications);
+      // Customer sees ONLY approved notifications:
+      // - order_approved (their orders that were approved)
+      // - price_list_approved (new price lists from their suppliers)
+      // NOT order_pending_approval (they know they placed the order)
+      const filteredNotifications = customerNotifications.filter(
+        (notification) =>
+          notification.type === "order_approved" ||
+          notification.type === "price_list_approved"
+      );
+
+      setNotifications(filteredNotifications);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
