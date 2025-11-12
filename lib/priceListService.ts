@@ -445,17 +445,19 @@ export const priceListService = {
       // Create notifications
       try {
         // 1. Notify the supplier that their price list was approved
+        // IMPORTANT: Only supplier_id is set, NO customer_id
         await createNotification(
           "price_list_approved",
           `Your price list "${priceList.name}" has been approved and is now active`,
           id,
           adminName,
           adminId,
-          priceList.supplier_id,
-          undefined // No customer_id for supplier notification
+          priceList.supplier_id, // Set supplier_id so it's fetched by supplier query
+          undefined // NO customer_id - supplier notification only
         );
 
         // 2. Notify all customers associated with this supplier about the new price list
+        // IMPORTANT: Only customer_id is set, NO supplier_id
         const associations = await associationService.getBySupplier(priceList.supplier_id);
         await Promise.all(
           associations.map((association) =>
@@ -465,8 +467,8 @@ export const priceListService = {
               id,
               adminName,
               adminId,
-              priceList.supplier_id,
-              association.customer_id
+              undefined, // NO supplier_id - customer notification only
+              association.customer_id // Set customer_id so it's fetched by customer query
             )
           )
         );
