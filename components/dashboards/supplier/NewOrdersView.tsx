@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { account } from "../../../lib/appwrite";
 import { orderService } from "../../../lib/orderService";
 import type { Order } from "../../../types/order";
@@ -7,21 +8,15 @@ import { format } from "date-fns";
 import Modal from "../../common/Modal";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import OrderPDFDocument from "../../pdf/OrderPDFDocument";
-import OrderHistoryModal from "./OrderHistoryModal";
 
 const NewOrdersView = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "all">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [notification, setNotification] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -43,15 +38,10 @@ const NewOrdersView = () => {
       setOrders(activeOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
-      showNotification("error", "Failed to load orders");
+      toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
-  };
-
-  const showNotification = (type: "success" | "error", message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
   };
 
   const handleManageOrder = (order: Order) => {
@@ -67,14 +57,14 @@ const NewOrdersView = () => {
     try {
       await orderService.updateStatus(orderId, newStatus);
       await loadOrders();
-      showNotification("success", `Order status updated to ${getStatusLabel(newStatus)}`);
+      toast.success(`Order status updated to ${getStatusLabel(newStatus)}`);
       if (selectedOrder?.$id === orderId) {
         const updatedOrder = await orderService.getById(orderId);
         setSelectedOrder(updatedOrder);
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      showNotification("error", "Failed to update order status");
+      toast.error("Failed to update order status");
     } finally {
       setUpdatingStatus(false);
     }
@@ -99,21 +89,6 @@ const NewOrdersView = () => {
 
   return (
     <div className="flex flex-1 flex-col p-6">
-      {/* Notification */}
-      {notification && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
-          <div
-            className={`px-4 py-3 rounded-lg shadow-lg ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
-            }`}
-          >
-            <p className="text-sm font-medium">{notification.message}</p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -125,13 +100,6 @@ const NewOrdersView = () => {
               Manage your active orders from customers
             </p>
           </div>
-          <button
-            onClick={() => setShowHistoryModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            <span className="material-symbols-outlined text-base">history</span>
-            <span>View Order History</span>
-          </button>
         </div>
 
         {/* Status Filter Pills */}
@@ -474,12 +442,6 @@ const NewOrdersView = () => {
           </div>
         </Modal>
       )}
-
-      {/* Order History Modal */}
-      <OrderHistoryModal
-        isOpen={showHistoryModal}
-        onClose={() => setShowHistoryModal(false)}
-      />
     </div>
   );
 };

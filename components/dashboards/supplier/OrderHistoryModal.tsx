@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { account } from "../../../lib/appwrite";
 import { orderService } from "../../../lib/orderService";
 import type { Order } from "../../../types/order";
@@ -82,9 +83,12 @@ const OrderHistoryModal: React.FC<OrderHistoryModalProps> = ({ isOpen, onClose }
 
       // Clean up
       URL.revokeObjectURL(link.href);
+
+      // Show success toast
+      toast.success("ZIP file generated successfully!");
     } catch (error) {
       console.error("Error generating ZIP file:", error);
-      alert("Failed to generate ZIP file. Please try again.");
+      toast.error("Failed to generate ZIP file. Please try again.");
     } finally {
       setGeneratingZip(false);
     }

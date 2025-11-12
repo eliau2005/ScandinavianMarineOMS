@@ -76,10 +76,59 @@ const OrderHistory = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-customer-accent"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading orders...</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Order #
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Supplier
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Date
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Total
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-24 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-32 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-28 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 w-20 animate-pulse bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="h-4 w-20 ml-auto animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2 justify-end">
+                        <div className="h-8 w-20 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                        <div className="h-8 w-20 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : orders.length === 0 ? (

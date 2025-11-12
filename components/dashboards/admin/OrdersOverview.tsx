@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { orderService } from "../../../lib/orderService";
 import type { Order } from "../../../types/order";
 import { parseOrderItems, getStatusColor, getStatusLabel } from "../../../types/order";
@@ -122,9 +123,12 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
       // Close modal
       setShowDetailsModal(false);
       setSelectedOrder(null);
+
+      // Show success toast
+      toast.success("Order approved successfully!");
     } catch (error) {
       console.error("Error approving order:", error);
-      alert("Failed to approve order. Please try again.");
+      toast.error("Failed to approve order. Please try again.");
     } finally {
       setIsApproving(false);
     }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { account } from "../../../lib/appwrite";
 import { associationService, orderService } from "../../../lib/orderService";
 import { priceListService } from "../../../lib/priceListService";
@@ -270,20 +269,6 @@ const PlaceOrder = () => {
 
   return (
     <div className="flex flex-1 flex-col p-6">
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
       {loading ? (
         <div className="flex items-center justify-center flex-1">
           <div className="flex flex-col items-center gap-3">

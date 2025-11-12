@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { account, databases, appwriteConfig } from "./lib/appwrite";
 import { Models } from "appwrite";
 import Login from "./components/Login";
@@ -89,5 +91,17 @@ const root = createRoot(container!);
 root.render(
   <QueryClientProvider client={queryClient}>
     <App />
+    <ToastContainer
+      position="top-right"
+      autoClose={3000}
+      hideProgressBar={false}
+      newestOnTop
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="light"
+    />
   </QueryClientProvider>
 );

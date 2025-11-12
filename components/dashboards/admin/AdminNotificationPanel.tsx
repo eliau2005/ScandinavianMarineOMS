@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 import { type Notification } from "../../../lib/notificationService";
 import { orderService } from "../../../lib/orderService";
 import { priceListService } from "../../../lib/priceListService";
@@ -56,9 +57,12 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({
 
       // Invalidate notifications to trigger refetch
       invalidateNotifications();
+
+      // Show success toast
+      toast.success("Approved successfully!");
     } catch (error) {
       console.error("Error approving:", error);
-      alert("Failed to approve. Please try again.");
+      toast.error("Failed to approve. Please try again.");
     } finally {
       setIsProcessing(false);
     }

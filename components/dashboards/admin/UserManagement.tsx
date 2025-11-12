@@ -330,13 +330,26 @@ const UserManagement = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {loadingUsers ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-4">
-                      <div className="flex justify-center items-center">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-solid border-admin-accent border-t-transparent"></div>
-                      </div>
-                    </td>
-                  </tr>
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-32 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-48 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-24 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-6 w-20 animate-pulse bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                      </td>
+                      <td className="px-6 py-4 flex gap-2">
+                        <div className="h-8 w-16 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                        <div className="h-8 w-16 animate-pulse bg-gray-300 dark:bg-gray-600 rounded"></div>
+                      </td>
+                    </tr>
+                  ))
                 ) : errorUsers ? (
                   <tr>
                     <td
