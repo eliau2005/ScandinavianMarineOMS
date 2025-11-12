@@ -34,6 +34,7 @@ const OrderHistoryModal: React.FC<OrderHistoryModalProps> = ({ isOpen, onClose }
       const user = await account.get();
       const ordersData = await orderService.getBySupplier(user.$id);
       // Filter for completed/historical orders only (shipped, delivered, cancelled)
+      // NOTE: pending_approval orders are excluded - suppliers should NOT see these
       const historicalOrders = ordersData.filter(
         (order) =>
           order.status === "shipped" ||

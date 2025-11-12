@@ -54,8 +54,13 @@ const IncomingOrders = () => {
     try {
       const user = await account.get();
       const ordersData = await orderService.getBySupplier(user.$id);
-      // Fetch all orders for comprehensive history view
-      setOrders(ordersData);
+
+      // Filter out orders pending admin approval - suppliers should NOT see these
+      const approvedOrders = ordersData.filter(
+        (order) => order.status !== "pending_approval"
+      );
+
+      setOrders(approvedOrders);
     } catch (error) {
       console.error("Error loading orders:", error);
       showNotification("error", "Failed to load orders");

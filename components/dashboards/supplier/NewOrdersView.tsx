@@ -33,6 +33,7 @@ const NewOrdersView = () => {
       const user = await account.get();
       const ordersData = await orderService.getBySupplier(user.$id);
       // Filter for active orders only (pending, confirmed, processing)
+      // NOTE: pending_approval orders are excluded - suppliers should NOT see these
       const activeOrders = ordersData.filter(
         (order) =>
           order.status === "pending" ||
