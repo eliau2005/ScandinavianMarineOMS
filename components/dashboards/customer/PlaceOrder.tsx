@@ -220,7 +220,10 @@ const PlaceOrder = () => {
         "order_pending_approval",
         `Order ${newOrder.order_number} from ${currentUser.name} is pending approval`,
         newOrder.$id!,
-        currentUser.name
+        currentUser.name,
+        currentUser.id,
+        selectedSupplierPriceList.supplierId,
+        currentUser.id
       );
 
       toast.success("Order placed successfully and is pending admin approval!");

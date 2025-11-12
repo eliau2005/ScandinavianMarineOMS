@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { getUnreadNotifications, markAsRead, type Notification } from "../../../lib/notificationService";
+import { orderService } from "../../../lib/orderService";
+import { priceListService } from "../../../lib/priceListService";
+import NotificationActionModal from "../../common/NotificationActionModal";
 import { format } from "date-fns";
 
 interface AdminNotificationPanelProps {
   onNotificationClick?: (notification: Notification) => void;
+  onViewItem?: (notification: Notification) => void;
 }
 
-const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({ onNotificationClick }) => {
+const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({
+  onNotificationClick,
+  onViewItem
+}) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     loadNotifications();
@@ -29,22 +39,72 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({ onNotif
     }
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setShowActionModal(true);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedNotification) return;
+
+    setIsProcessing(true);
     try {
-      // Mark as read
-      if (notification.$id) {
-        await markAsRead(notification.$id);
-        // Remove from local state
-        setNotifications((prev) => prev.filter((n) => n.$id !== notification.$id));
+      if (selectedNotification.type === "order_pending_approval") {
+        // Approve order - change status to pending (sent to supplier)
+        await orderService.updateStatus(
+          selectedNotification.related_item_id,
+          "pending"
+        );
+      } else if (selectedNotification.type === "price_list_pending_approval") {
+        // Approve price list - activate it
+        await priceListService.activate(selectedNotification.related_item_id);
       }
 
-      // Call parent handler if provided
-      if (onNotificationClick) {
-        onNotificationClick(notification);
+      // Mark notification as read
+      if (selectedNotification.$id) {
+        await markAsRead(selectedNotification.$id);
       }
+
+      // Remove from local state
+      setNotifications((prev) =>
+        prev.filter((n) => n.$id !== selectedNotification.$id)
+      );
+
+      // Close modal
+      setShowActionModal(false);
+      setSelectedNotification(null);
+
+      // Reload notifications
+      await loadNotifications();
     } catch (error) {
-      console.error("Error marking notification as read:", error);
+      console.error("Error approving:", error);
+      alert("Failed to approve. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const handleView = () => {
+    if (!selectedNotification) return;
+
+    // Mark as read
+    if (selectedNotification.$id) {
+      markAsRead(selectedNotification.$id).then(() => {
+        setNotifications((prev) =>
+          prev.filter((n) => n.$id !== selectedNotification.$id)
+        );
+      });
+    }
+
+    // Close action modal
+    setShowActionModal(false);
+
+    // Call parent handlers to navigate and open detail modal
+    if (onViewItem) {
+      onViewItem(selectedNotification);
+    }
+
+    setSelectedNotification(null);
   };
 
   const getNotificationIcon = (type: Notification["type"]) => {
@@ -153,6 +213,19 @@ const AdminNotificationPanel: React.FC<AdminNotificationPanelProps> = ({ onNotif
           </div>
         )}
       </div>
+
+      {/* Notification Action Modal */}
+      <NotificationActionModal
+        isOpen={showActionModal}
+        onClose={() => {
+          setShowActionModal(false);
+          setSelectedNotification(null);
+        }}
+        notification={selectedNotification}
+        onApprove={handleApprove}
+        onView={handleView}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 };

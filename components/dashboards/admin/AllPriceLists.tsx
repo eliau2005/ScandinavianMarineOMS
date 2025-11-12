@@ -7,7 +7,15 @@ import PriceTable from "../../priceList/PriceTable";
 import type { PriceListTableRow } from "../../../types/priceList";
 import { markAsRead } from "../../../lib/notificationService";
 
-const AllPriceLists = () => {
+interface AllPriceListsProps {
+  openPriceListId?: string | null;
+  onPriceListModalClosed?: () => void;
+}
+
+const AllPriceLists: React.FC<AllPriceListsProps> = ({
+  openPriceListId,
+  onPriceListModalClosed,
+}) => {
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPriceList, setSelectedPriceList] = useState<PriceList | null>(null);
@@ -25,6 +33,20 @@ const AllPriceLists = () => {
   useEffect(() => {
     loadPriceLists();
   }, []);
+
+  // Auto-open modal when openPriceListId is provided
+  useEffect(() => {
+    if (openPriceListId && priceLists.length > 0) {
+      const priceList = priceLists.find((pl) => pl.$id === openPriceListId);
+      if (priceList) {
+        handleViewDetails(priceList);
+      }
+      // Clear the openPriceListId after attempting to open
+      if (onPriceListModalClosed) {
+        onPriceListModalClosed();
+      }
+    }
+  }, [openPriceListId, priceLists]);
 
   const loadPriceLists = async () => {
     setLoading(true);
@@ -64,6 +86,32 @@ const AllPriceLists = () => {
       await loadPriceLists();
 
       showNotification("success", `Price list "${priceList.name}" has been activated successfully`);
+    } catch (error) {
+      console.error("Error approving price list:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to approve price list";
+      showNotification("error", errorMessage);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleApprovePriceListFromModal = async () => {
+    if (!selectedPriceList) return;
+
+    setProcessing(selectedPriceList.$id!);
+    try {
+      // Activate the price list
+      await priceListService.activate(selectedPriceList.$id!);
+
+      // Reload price lists
+      await loadPriceLists();
+
+      // Close modal
+      setShowDetailsModal(false);
+      setSelectedPriceList(null);
+      setPriceListItems([]);
+
+      showNotification("success", `Price list "${selectedPriceList.name}" has been activated successfully`);
     } catch (error) {
       console.error("Error approving price list:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to approve price list";
@@ -408,6 +456,30 @@ const AllPriceLists = () => {
           wide
         >
           <div className="space-y-4">
+            {/* Approve Button */}
+            {selectedPriceList.status === "pending_approval" && (
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={handleApprovePriceListFromModal}
+                  disabled={processing === selectedPriceList.$id}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processing === selectedPriceList.$id ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Approving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-base">
+                        check_circle
+                      </span>
+                      <span>Approve Price List</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
             {/* Price List Info */}
             <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
               <div>

@@ -18,7 +18,15 @@ interface OrderStats {
   totalRevenue: number;
 }
 
-const OrdersOverview = () => {
+interface OrdersOverviewProps {
+  openOrderId?: string | null;
+  onOrderModalClosed?: () => void;
+}
+
+const OrdersOverview: React.FC<OrdersOverviewProps> = ({
+  openOrderId,
+  onOrderModalClosed,
+}) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -27,6 +35,7 @@ const OrdersOverview = () => {
   const [filterCustomer, setFilterCustomer] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "all">("all");
+  const [isApproving, setIsApproving] = useState(false);
   const [stats, setStats] = useState<OrderStats>({
     total: 0,
     pending: 0,
@@ -45,6 +54,20 @@ const OrdersOverview = () => {
   useEffect(() => {
     calculateStats();
   }, [orders]);
+
+  // Auto-open modal when openOrderId is provided
+  useEffect(() => {
+    if (openOrderId && orders.length > 0) {
+      const order = orders.find((o) => o.$id === openOrderId);
+      if (order) {
+        handleViewDetails(order);
+      }
+      // Clear the openOrderId after attempting to open
+      if (onOrderModalClosed) {
+        onOrderModalClosed();
+      }
+    }
+  }, [openOrderId, orders]);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -83,6 +106,28 @@ const OrdersOverview = () => {
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
     setShowDetailsModal(true);
+  };
+
+  const handleApproveOrder = async () => {
+    if (!selectedOrder) return;
+
+    setIsApproving(true);
+    try {
+      // Approve order - change status to pending (sent to supplier)
+      await orderService.updateStatus(selectedOrder.$id!, "pending");
+
+      // Reload orders
+      await loadOrders();
+
+      // Close modal
+      setShowDetailsModal(false);
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error("Error approving order:", error);
+      alert("Failed to approve order. Please try again.");
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   // Get unique customers and suppliers for filters
@@ -389,8 +434,29 @@ const OrdersOverview = () => {
           wide
         >
           <div className="space-y-4">
-            {/* Export Button */}
-            <div className="flex justify-end mb-4">
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mb-4">
+              {selectedOrder.status === "pending_approval" && (
+                <button
+                  onClick={handleApproveOrder}
+                  disabled={isApproving}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isApproving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Approving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-base">
+                        check_circle
+                      </span>
+                      <span>Approve Order</span>
+                    </>
+                  )}
+                </button>
+              )}
               <PDFDownloadLink
                 document={<OrderPDFDocument order={selectedOrder} />}
                 fileName={`Order-${selectedOrder.order_number}.pdf`}

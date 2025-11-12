@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { account } from "../../../lib/appwrite";
-import { getUnreadNotifications, markAsRead, type Notification } from "../../../lib/notificationService";
+import { getNotificationsForSupplier, markAsRead, type Notification } from "../../../lib/notificationService";
 import { format } from "date-fns";
 
 interface SupplierNotificationPanelProps {
@@ -36,12 +36,11 @@ const SupplierNotificationPanel: React.FC<SupplierNotificationPanelProps> = ({ o
 
   const loadNotifications = async () => {
     try {
-      const unreadNotifications = await getUnreadNotifications();
+      if (!currentUserId) return;
 
-      // Filter notifications relevant to this supplier
-      // For now, we'll show all unread notifications
-      // You can add additional filtering logic here if needed
-      setNotifications(unreadNotifications);
+      // Fetch notifications filtered for this supplier
+      const supplierNotifications = await getNotificationsForSupplier(currentUserId);
+      setNotifications(supplierNotifications);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
@@ -71,8 +70,12 @@ const SupplierNotificationPanel: React.FC<SupplierNotificationPanelProps> = ({ o
     switch (type) {
       case "order_pending_approval":
         return "shopping_cart";
+      case "order_approved":
+        return "check_circle";
       case "price_list_pending_approval":
         return "receipt_long";
+      case "price_list_approved":
+        return "verified";
       default:
         return "notifications";
     }
@@ -82,8 +85,12 @@ const SupplierNotificationPanel: React.FC<SupplierNotificationPanelProps> = ({ o
     switch (type) {
       case "order_pending_approval":
         return "text-blue-600 dark:text-blue-400";
+      case "order_approved":
+        return "text-green-600 dark:text-green-400";
       case "price_list_pending_approval":
         return "text-purple-600 dark:text-purple-400";
+      case "price_list_approved":
+        return "text-green-600 dark:text-green-400";
       default:
         return "text-gray-600 dark:text-gray-400";
     }

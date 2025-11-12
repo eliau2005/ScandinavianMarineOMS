@@ -16,6 +16,8 @@ const AdminDashboard = () => {
   const [activeView, setActiveView] = useState<AdminView>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+  const [openPriceListId, setOpenPriceListId] = useState<string | null>(null);
 
   const handleLogout = async () => {
     try {
@@ -44,6 +46,16 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleViewItemFromNotification = (notification: Notification) => {
+    if (notification.type === "price_list_pending_approval") {
+      setActiveView("pricing");
+      setOpenPriceListId(notification.related_item_id);
+    } else if (notification.type === "order_pending_approval") {
+      setActiveView("orders");
+      setOpenOrderId(notification.related_item_id);
+    }
+  };
+
   const navLinks: { id: AdminView; label: string; disabled: boolean }[] = [
     { id: "dashboard", label: "Dashboard", disabled: false },
     { id: "users", label: "Users", disabled: false },
@@ -63,9 +75,19 @@ const AdminDashboard = () => {
       case "associations":
         return <SupplierCustomerAssociations />;
       case "orders":
-        return <OrdersOverview />;
+        return (
+          <OrdersOverview
+            openOrderId={openOrderId}
+            onOrderModalClosed={() => setOpenOrderId(null)}
+          />
+        );
       case "pricing":
-        return <AllPriceLists />;
+        return (
+          <AllPriceLists
+            openPriceListId={openPriceListId}
+            onPriceListModalClosed={() => setOpenPriceListId(null)}
+          />
+        );
       case "dashboard":
       default:
         return (
@@ -195,7 +217,10 @@ const AdminDashboard = () => {
 
             {/* Notification Panel - Right Side */}
             <div className="hidden lg:block w-96">
-              <AdminNotificationPanel onNotificationClick={handleNotificationClick} />
+              <AdminNotificationPanel
+                onNotificationClick={handleNotificationClick}
+                onViewItem={handleViewItemFromNotification}
+              />
             </div>
           </div>
         );

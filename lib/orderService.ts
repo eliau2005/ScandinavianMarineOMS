@@ -1,4 +1,4 @@
-import { databases, appwriteConfig } from "./appwrite";
+import { databases, appwriteConfig, account } from "./appwrite";
 import { ID, Query } from "appwrite";
 import type {
   Order,
@@ -12,6 +12,7 @@ import {
   calculateOrderTotal,
   generateOrderNumber,
 } from "../types/order";
+import { createNotification } from "./notificationService";
 
 // ============================================================================
 // CONFIGURATION
@@ -361,7 +362,55 @@ export const orderService = {
     id: string,
     status: Order["status"]
   ): Promise<Order> {
-    return this.update(id, { status });
+    // Get the order before updating to check the status change
+    const order = await this.getById(id);
+    const previousStatus = order.status;
+
+    // Update the status
+    const updatedOrder = await this.update(id, { status });
+
+    // If order is being approved (pending_approval -> pending), create notifications
+    if (previousStatus === "pending_approval" && status === "pending") {
+      try {
+        // Get current admin user for notification
+        let adminName = "Admin";
+        let adminId = "";
+        try {
+          const currentUser = await account.get();
+          adminName = currentUser.name;
+          adminId = currentUser.$id;
+        } catch (error) {
+          console.error("Could not get current user for notification:", error);
+        }
+
+        // Create notification for the supplier
+        await createNotification(
+          "order_approved",
+          `Order ${order.order_number} from ${order.customer_name} has been approved`,
+          id,
+          adminName,
+          adminId,
+          order.supplier_id,
+          undefined // No customer_id for supplier notification
+        );
+
+        // Create notification for the customer
+        await createNotification(
+          "order_approved",
+          `Your order ${order.order_number} has been approved and sent to ${order.supplier_name}`,
+          id,
+          adminName,
+          adminId,
+          undefined, // No supplier_id for customer notification
+          order.customer_id
+        );
+      } catch (error) {
+        console.error("Error creating order approval notifications:", error);
+        // Don't fail the update if notification creation fails
+      }
+    }
+
+    return updatedOrder;
   },
 
   /**

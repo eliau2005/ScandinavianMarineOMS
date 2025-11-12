@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getUnreadNotifications, markAsRead, type Notification } from "../../../lib/notificationService";
+import { account } from "../../../lib/appwrite";
+import { getNotificationsForCustomer, markAsRead, type Notification } from "../../../lib/notificationService";
 import { format } from "date-fns";
 
 interface CustomerNotificationPanelProps {
@@ -9,18 +10,41 @@ interface CustomerNotificationPanelProps {
 const CustomerNotificationPanel: React.FC<CustomerNotificationPanelProps> = ({ onNotificationClick }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadNotifications();
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
+    loadCurrentUser();
   }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      loadNotifications();
+      // Poll for new notifications every 30 seconds
+      const interval = setInterval(loadNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUserId]);
+
+  const loadCurrentUser = async () => {
+    try {
+      const user = await account.get();
+      setCurrentUserId(user.$id);
+    } catch (error) {
+      console.error("Error loading user:", error);
+    }
+  };
 
   const loadNotifications = async () => {
     try {
-      const unreadNotifications = await getUnreadNotifications();
-      setNotifications(unreadNotifications);
+      if (!currentUserId) return;
+
+      // Fetch notifications for this customer
+      // This includes:
+      // - order_pending_approval (customer's own orders)
+      // - price_list_approved (approved price lists from their suppliers)
+      const customerNotifications = await getNotificationsForCustomer(currentUserId);
+
+      setNotifications(customerNotifications);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
@@ -50,8 +74,12 @@ const CustomerNotificationPanel: React.FC<CustomerNotificationPanelProps> = ({ o
     switch (type) {
       case "order_pending_approval":
         return "receipt_long";
+      case "order_approved":
+        return "check_circle";
       case "price_list_pending_approval":
         return "price_check";
+      case "price_list_approved":
+        return "new_releases";
       default:
         return "notifications";
     }

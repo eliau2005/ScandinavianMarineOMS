@@ -276,7 +276,10 @@ const PriceListManagement = () => {
         "price_list_pending_approval",
         `Price list "${priceList.name}" from ${currentUser?.name} is pending approval`,
         priceList.$id!,
-        currentUser?.name || "Unknown Supplier"
+        currentUser?.name || "Unknown Supplier",
+        currentUser?.id || "",
+        currentUser?.id,
+        undefined
       );
 
       await loadPriceLists();

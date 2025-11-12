@@ -1,4 +1,4 @@
-import { databases, appwriteConfig } from "./appwrite";
+import { databases, appwriteConfig, account } from "./appwrite";
 import { ID, Query, Permission, Role } from "appwrite";
 import type {
   PriceList,
@@ -9,6 +9,8 @@ import type {
   ProductWithCategory,
   PriceListItemWithDetails,
 } from "../types/priceList";
+import { associationService } from "./orderService";
+import { createNotification } from "./notificationService";
 
 // ============================================================================
 // CONFIGURATION
@@ -427,7 +429,53 @@ export const priceListService = {
       );
 
       // Activate the new price list
-      return await this.update(id, { status: "active" });
+      const activatedPriceList = await this.update(id, { status: "active" });
+
+      // Get current admin user for notification
+      let adminName = "Admin";
+      let adminId = "";
+      try {
+        const currentUser = await account.get();
+        adminName = currentUser.name;
+        adminId = currentUser.$id;
+      } catch (error) {
+        console.error("Could not get current user for notification:", error);
+      }
+
+      // Create notifications
+      try {
+        // 1. Notify the supplier that their price list was approved
+        await createNotification(
+          "price_list_approved",
+          `Your price list "${priceList.name}" has been approved and is now active`,
+          id,
+          adminName,
+          adminId,
+          priceList.supplier_id,
+          undefined // No customer_id for supplier notification
+        );
+
+        // 2. Notify all customers associated with this supplier about the new price list
+        const associations = await associationService.getBySupplier(priceList.supplier_id);
+        await Promise.all(
+          associations.map((association) =>
+            createNotification(
+              "price_list_approved",
+              `Updated price list "${priceList.name}" from ${priceList.supplier_name} is now available`,
+              id,
+              adminName,
+              adminId,
+              priceList.supplier_id,
+              association.customer_id
+            )
+          )
+        );
+      } catch (error) {
+        console.error("Error creating price list approval notifications:", error);
+        // Don't fail the activation if notification creation fails
+      }
+
+      return activatedPriceList;
     } catch (error) {
       console.error("Error activating price list:", error);
       throw error;
