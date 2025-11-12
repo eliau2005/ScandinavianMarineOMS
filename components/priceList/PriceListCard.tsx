@@ -51,71 +51,89 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
-      <div className="p-5">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">
-              {priceList.name}
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {priceList.supplier_name}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                priceList.status
-              )}`}
-            >
-              {priceList.status === "pending_approval" ? "Pending Approval" : priceList.status}
+    <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all border-2 border-transparent hover:border-supplier-accent">
+      <div className="p-6 flex flex-col h-full">
+        {/* Status Badges - Top Right */}
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+              priceList.status
+            )}`}
+          >
+            {priceList.status === "pending_approval" ? "Pending Approval" : priceList.status}
+          </span>
+          {priceList.is_default && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              Default
             </span>
-            {priceList.is_default && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                Default
+          )}
+        </div>
+
+        {/* Header */}
+        <div className="mb-4">
+          <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+            {priceList.name}
+          </h3>
+          <div className="h-1 w-12 bg-supplier-accent rounded"></div>
+        </div>
+
+        {/* Supplier Name */}
+        <div className="flex-1 mb-4">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+            Supplier
+          </p>
+          <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
+            {priceList.supplier_name}
+          </p>
+        </div>
+
+        {/* Dates */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">
+              schedule
+            </span>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Validity Period
+            </h4>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Effective:
               </span>
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                {formatDate(priceList.effective_date)}
+              </span>
+            </div>
+            {priceList.expiry_date && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Expires:
+                </span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  {formatDate(priceList.expiry_date)}
+                </span>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Dates */}
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <span className="material-symbols-outlined text-base">
-              calendar_today
-            </span>
-            <span>
-              Effective: <strong>{formatDate(priceList.effective_date)}</strong>
-            </span>
-          </div>
-          {priceList.expiry_date && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <span className="material-symbols-outlined text-base">
-                event_busy
-              </span>
-              <span>
-                Expires: <strong>{formatDate(priceList.expiry_date)}</strong>
-              </span>
-            </div>
-          )}
-        </div>
-
         {/* Notes */}
         {priceList.notes && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+          <div className="mb-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
               {priceList.notes}
             </p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 pt-4 border-t-2 border-gray-100 dark:border-gray-700">
           {onView && (
             <button
               onClick={onView}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-supplier-accent bg-supplier-accent bg-opacity-10 rounded-lg hover:bg-opacity-20 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-supplier-accent rounded-lg hover:bg-opacity-90 hover:shadow-lg transition-all"
             >
               <span className="material-symbols-outlined text-base">
                 visibility
@@ -126,7 +144,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
           {onEdit && priceList.status === "draft" && (
             <button
               onClick={onEdit}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
             >
               <span className="material-symbols-outlined text-base">edit</span>
               <span>Edit</span>
@@ -135,7 +153,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
           {onDuplicate && (
             <button
               onClick={onDuplicate}
-              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
               title="Duplicate"
             >
               <span className="material-symbols-outlined text-base">
@@ -147,10 +165,10 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
             <button
               onClick={disableSetActive ? undefined : onSetActive}
               disabled={disableSetActive}
-              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              className={`px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                 disableSetActive
                   ? "text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
-                  : "text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800"
+                  : "text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 hover:shadow-md"
               }`}
               title={disableSetActive ? disableSetActiveReason : "Set Active"}
             >
@@ -162,7 +180,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
           {onCancelRequest && priceList.status === "pending_approval" && (
             <button
               onClick={onCancelRequest}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-800 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-800 hover:shadow-md transition-all"
               title="Cancel Approval Request"
             >
               <span className="material-symbols-outlined text-base">
@@ -174,7 +192,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
           {onCreateNewDraft && priceList.status === "active" && (
             <button
               onClick={onCreateNewDraft}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 hover:shadow-md transition-all"
               title="Create New Draft"
             >
               <span className="material-symbols-outlined text-base">
@@ -186,7 +204,7 @@ const PriceListCard: React.FC<PriceListCardProps> = ({
           {onDelete && priceList.status === "draft" && (
             <button
               onClick={onDelete}
-              className="px-3 py-2 text-sm font-medium text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+              className="px-3 py-2.5 text-sm font-medium text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 hover:shadow-md transition-all"
               title="Delete"
             >
               <span className="material-symbols-outlined text-base">

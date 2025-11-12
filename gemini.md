@@ -353,3 +353,139 @@ The application is configured for continuous deployment on **Vercel**. Key confi
 ### Removal of Old Features:
 -   **Removed "Request Edit"**: The "Request Edit" feature for active price lists has been removed in favor of the new draft workflow.
 -   **Removed 24-Hour Cooldown**: The 24-hour cooldown period for editing a price list has also been removed, as the new draft system provides a more flexible and controlled way to manage updates.
+
+## 18. Comprehensive Notification System with React Query
+
+-   **Objective**: Implement a robust, real-time notification system for order and price list approvals across all user roles.
+-   **Actions Taken**:
+
+### Notification Infrastructure:
+-   **Database Schema**: Enhanced `notifications` collection with role-specific fields:
+    -   Added `supplier_id` and `customer_id` for targeted notification delivery
+    -   Notification types: `order_pending_approval`, `price_list_pending_approval`, `order_approved`, `price_list_approved`
+-   **Service Layer**: Updated `lib/notificationService.ts` with:
+    -   Role-based filtering functions (`getNotificationsForSupplier`, `getNotificationsForCustomer`)
+    -   Creator filtering to prevent suppliers from seeing their own notifications
+    -   Proper ID separation (supplier_id vs customer_id for distinct audiences)
+
+### React Query Integration:
+-   **New Hook System**: Created `lib/hooks/useNotifications.ts` with custom hooks:
+    -   `useAdminNotifications()`: Auto-refetch every 30s for pending approvals
+    -   `useSupplierNotifications(supplierId)`: Approved orders and price lists
+    -   `useCustomerNotifications(customerId)`: Approved orders and price list updates
+    -   `useMarkNotificationAsRead()`: Optimistic updates with cache invalidation
+    -   `useInvalidateNotifications()`: Manual refresh helper
+-   **Setup**: Added `QueryClientProvider` to `index.tsx` with proper configuration
+
+### Role-Based Notification Logic:
+-   **Admin**: Sees only `pending_approval` notifications for orders and price lists
+-   **Supplier**: Sees `order_approved` (new orders from customers) and `price_list_approved` (their approved price lists)
+-   **Customer**: Sees `order_approved` (their approved orders) and `price_list_approved` (updated price lists from suppliers)
+-   **Defense in Depth**: Multiple filtering layers (service + component) to ensure proper visibility
+
+### Component Updates:
+-   **AdminNotificationPanel.tsx**:
+    -   Created `NotificationActionModal.tsx` for approve/view actions
+    -   Added approve buttons to order and price list detail modals
+    -   Integrated React Query for automatic polling
+-   **SupplierNotificationPanel.tsx**:
+    -   Filtered to show only approved-type notifications
+    -   Updated message to show "Your price list has been approved" instead of customer-facing message
+-   **CustomerNotificationPanel.tsx**:
+    -   Simplified filtering for approved types only
+    -   Shows "Updated price list from [Supplier] is now available"
+
+### Service Integration:
+-   **orderService.updateStatus()**: Creates separate notifications for supplier and customer when approving orders
+-   **priceListService.activate()**: Creates distinct notifications:
+    -   Supplier notification (only supplier_id set): "Your price list has been approved"
+    -   Customer notifications (only customer_id set): "Updated price list from [Supplier] is now available"
+
+### Order Visibility Control:
+-   **Supplier Views**: Ensured `pending_approval` orders are hidden from all supplier interfaces:
+    -   `IncomingOrders.tsx`: Added explicit filter
+    -   `NewOrdersView.tsx`: Confirmed existing whitelist filter
+    -   `OrderHistoryModal.tsx`: Confirmed existing status filter
+
+### Key Features:
+-   ✅ Real-time notification polling with React Query
+-   ✅ Strict role-based filtering with multiple safety layers
+-   ✅ Optimistic UI updates for instant feedback
+-   ✅ Proper notification targeting (no cross-contamination)
+-   ✅ Automatic cache invalidation and refetching
+-   ✅ Admin approval workflow with modal confirmations
+-   ✅ Hidden pending orders from supplier views
+
+## 19. Price List Management UI Modernization
+
+-   **Objective**: Update the Price List Management interface to match the modern, polished design of the PlaceOrder component.
+-   **Actions Taken**:
+
+### PriceListCard Component Redesign:
+-   **Enhanced Card Styling**:
+    -   Updated to `rounded-xl` with hover border effect (`border-2 hover:border-supplier-accent`)
+    -   Increased padding from `p-5` to `p-6` for more spacious feel
+    -   Added card shadow transitions (`shadow-md hover:shadow-xl`)
+-   **Modern Header Design**:
+    -   Increased title size to `text-2xl`
+    -   Added signature accent underline (`h-1 w-12 bg-supplier-accent rounded`)
+    -   Improved status badge positioning to top-right
+-   **Structured Information Display**:
+    -   Added "Supplier" label section with clear hierarchy
+    -   Transformed dates section into bordered blue box matching PlaceOrder style (`bg-blue-50 border border-blue-200`)
+    -   Added "Validity Period" header with icon
+    -   Enhanced notes section with background (`bg-gray-50 dark:bg-gray-700/50`)
+-   **Action Buttons Upgrade**:
+    -   Increased gap from `gap-2` to `gap-3`
+    -   Updated padding to `py-2.5` for better vertical spacing
+    -   Changed fonts to `font-semibold` for emphasis
+    -   Added shadow effects on hover (`hover:shadow-lg`, `hover:shadow-md`)
+    -   Primary View button now uses white text on supplier-accent background
+    -   Strengthened border separator to `border-t-2`
+
+### PriceListManagement Layout Improvements:
+-   **List View Header**:
+    -   Increased title from `text-2xl` to `text-3xl`
+    -   Added accent underline (`h-1 w-16 bg-supplier-accent rounded`)
+    -   Increased header margin from `mb-6` to `mb-8`
+    -   Updated button padding to `py-2.5` with `font-semibold`
+    -   Added shadow effects on hover for all buttons
+    -   Primary button uses `px-5` for emphasis
+-   **Edit/View Header**:
+    -   Added stronger bottom border (`border-b-2 border-gray-100`)
+    -   Improved back button with better spacing (`gap-2`, `font-medium`)
+    -   Increased title to `text-3xl` with accent underline
+    -   Updated all action buttons consistently:
+        - `px-4` or `px-5` for primary actions
+        - `py-2.5` for consistent vertical spacing
+        - `font-semibold` typography
+        - `hover:shadow-md` or `hover:shadow-lg` effects
+        - `transition-all` for smooth interactions
+    -   Increased button gap to `gap-3`
+-   **Grid Layout**: Updated from `gap-4` to `gap-6` for more breathing room between cards
+
+### Design Consistency:
+-   **Visual Hierarchy**:
+    -   Larger, bolder headings with accent lines
+    -   Consistent spacing throughout all sections
+    -   Stronger borders for better section separation
+-   **Interactive Elements**:
+    -   Enhanced hover states with shadows
+    -   Smooth transitions on all interactions
+    -   Improved button contrast and sizing
+-   **Typography**:
+    -   Upgraded to semibold fonts for buttons and labels
+    -   Consistent sizing across similar elements
+-   **Color Scheme**:
+    -   Proper use of supplier-accent color
+    -   Improved dark mode support
+    -   Better contrast for readability
+
+### Key Improvements:
+-   ✅ Modernized card design matching PlaceOrder aesthetic
+-   ✅ Better visual hierarchy with accent lines and larger headings
+-   ✅ More generous spacing and padding throughout
+-   ✅ Enhanced button styles with shadows and smooth transitions
+-   ✅ Improved typography with semibold fonts
+-   ✅ Consistent hover effects and color schemes
+-   ✅ Professional, polished appearance across all views

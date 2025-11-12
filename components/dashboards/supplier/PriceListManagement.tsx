@@ -395,19 +395,20 @@ const PriceListManagement = () => {
 
   const renderListView = () => (
     <div className="flex flex-1 flex-col p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
             Price List Management
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <div className="h-1 w-16 bg-supplier-accent rounded mb-3"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Manage your product pricing and update price lists
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowArchiveModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
           >
             <span className="material-symbols-outlined text-base">inventory_2</span>
             <span>Show Archive</span>
@@ -421,10 +422,10 @@ const PriceListManagement = () => {
               setShowCreateModal(true);
             }}
             disabled={hasReachedDraftLimit}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               hasReachedDraftLimit
                 ? "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
-                : "bg-supplier-accent text-white hover:bg-opacity-90"
+                : "bg-supplier-accent text-white hover:bg-opacity-90 hover:shadow-lg"
             }`}
             title={hasReachedDraftLimit ? "You have reached the maximum limit of 10 drafts" : ""}
           >
@@ -456,7 +457,7 @@ const PriceListManagement = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {priceLists.map((priceList) => (
             <PriceListCard
               key={priceList.$id}
@@ -518,13 +519,13 @@ const PriceListManagement = () => {
           <div className="flex flex-1 flex-col overflow-hidden">
 
             {/* Fixed Header */}
-            <div className="flex-shrink-0 px-6 pt-6 pb-4 bg-background-light dark:bg-background-dark">
+            <div className="flex-shrink-0 px-6 pt-6 pb-5 bg-background-light dark:bg-background-dark border-b-2 border-gray-100 dark:border-gray-700">
 
               <button
 
                 onClick={() => setView("list")}
 
-                className="flex items-center gap-1 text-sm text-supplier-accent hover:underline mb-4"
+                className="flex items-center gap-2 text-sm font-medium text-supplier-accent hover:text-opacity-80 mb-5 transition-colors"
 
               >
 
@@ -542,13 +543,15 @@ const PriceListManagement = () => {
 
                 <div>
 
-                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                  <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
 
                     {selectedPriceList?.name}
 
                   </h2>
 
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <div className="h-1 w-16 bg-supplier-accent rounded mb-3"></div>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
 
                     {selectedPriceList?.status === "draft"
                       ? "Edit prices for this list"
@@ -562,7 +565,7 @@ const PriceListManagement = () => {
 
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
 
                   {selectedPriceList && (
 
@@ -582,7 +585,7 @@ const PriceListManagement = () => {
 
                       fileName={`${selectedPriceList.name}.pdf`}
 
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
 
                     >
 
@@ -612,7 +615,7 @@ const PriceListManagement = () => {
 
                       onClick={() => selectedPriceList && handleCancelRequest(selectedPriceList)}
 
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 hover:shadow-lg transition-all"
 
                     >
 
@@ -636,7 +639,7 @@ const PriceListManagement = () => {
 
                         onClick={handleClearAllPrices}
 
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
 
                       >
 
@@ -656,7 +659,7 @@ const PriceListManagement = () => {
 
                         disabled={saving}
 
-                        className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-supplier-accent text-white rounded-lg text-sm font-semibold hover:bg-opacity-90 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
                       >
 
