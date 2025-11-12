@@ -717,7 +717,7 @@ const ProductManagement = () => {
   );
 
   return (
-    <div className="flex flex-1 flex-col p-6">
+    <div className="flex flex-1 flex-col overflow-hidden">
       {/* Notification */}
       {notification && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
@@ -735,48 +735,52 @@ const ProductManagement = () => {
         </div>
       )}
 
-      {/* Tabs & Search */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === "products"
-                ? "bg-supplier-accent text-white"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            }`}
-          >
-            Products ({products.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("categories")}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === "categories"
-                ? "bg-supplier-accent text-white"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            }`}
-          >
-            Categories ({categories.length})
-          </button>
-        </div>
+      {/* Fixed Header: Tabs & Search */}
+      <div className="flex-shrink-0 px-6 pt-6 pb-4 bg-background-light dark:bg-background-dark">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setActiveTab("products")}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === "products"
+                  ? "bg-supplier-accent text-white"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+            >
+              Products ({products.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("categories")}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === "categories"
+                  ? "bg-supplier-accent text-white"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+            >
+              Categories ({categories.length})
+            </button>
+          </div>
 
-        {/* Search */}
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={`Search ${activeTab}...`}
-            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent w-64"
-          />
+          {/* Search */}
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={`Search ${activeTab}...`}
+              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent w-64"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      {activeTab === "products" ? renderProducts() : renderCategories()}
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
+        {activeTab === "products" ? renderProducts() : renderCategories()}
+      </div>
 
 
       {/* Modals */}

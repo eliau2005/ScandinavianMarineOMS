@@ -180,9 +180,17 @@ const CustomerDashboard = () => {
     }
   };
 
+  const navLinks: { id: CustomerView; label: string }[] = [
+    { id: "dashboard", label: "Dashboard" },
+    { id: "placeOrder", label: "Place Order" },
+    { id: "pendingOrders", label: "Pending Orders" },
+    { id: "orderHistory", label: "Order History" },
+    { id: "priceHistory", label: "Price History" },
+  ];
+
   return (
     <div className="flex h-screen flex-col bg-background-light dark:bg-background-dark font-display">
-      {/* Simple Header with Logo and Logout */}
+      {/* Header with Navigation */}
       <header className="flex h-16 w-full items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-6 sticky top-0 z-10 shadow-sm">
         <button
           onClick={() => setActiveView("dashboard")}
@@ -196,26 +204,29 @@ const CustomerDashboard = () => {
           </h1>
         </button>
 
-        <div className="flex items-center gap-4">
-          {/* Back Button - Only show when not on dashboard */}
-          {activeView !== "dashboard" && (
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
             <button
-              onClick={() => setActiveView("dashboard")}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-customer-accent dark:hover:text-customer-accent transition-colors text-sm font-medium"
+              key={link.id}
+              onClick={() => setActiveView(link.id)}
+              className={`text-sm font-medium transition-colors ${
+                activeView === link.id
+                  ? "text-customer-accent font-semibold"
+                  : "text-gray-600 dark:text-gray-300 hover:text-customer-accent dark:hover:text-customer-accent"
+              }`}
             >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
-              <span>Back to Dashboard</span>
+              {link.label}
             </button>
-          )}
+          ))}
+        </nav>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-customer-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-colors text-sm"
-          >
-            <span className="material-symbols-outlined text-base">logout</span>
-            <span>Logout</span>
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-customer-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-colors text-sm"
+        >
+          <span className="material-symbols-outlined text-base">logout</span>
+          <span>Logout</span>
+        </button>
       </header>
 
       <main className="flex flex-1 overflow-hidden">

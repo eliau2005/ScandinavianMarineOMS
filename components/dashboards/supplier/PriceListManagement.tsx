@@ -512,9 +512,10 @@ const PriceListManagement = () => {
 
         return (
 
-          <div className="flex flex-1 flex-col p-6">
+          <div className="flex flex-1 flex-col overflow-hidden">
 
-            <div className="mb-6">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-6 pt-6 pb-4 bg-background-light dark:bg-background-dark">
 
               <button
 
@@ -680,36 +681,38 @@ const PriceListManagement = () => {
 
             </div>
 
-    
 
-            <div className="flex gap-6">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <div className="flex gap-6">
 
-              {columns.map((col, colIndex) => (
+                {columns.map((col, colIndex) => (
 
-                <div key={colIndex} className="w-1/2 space-y-6">
+                  <div key={colIndex} className="w-1/2 space-y-6">
 
-                  {Object.entries(col).map(([categoryId, group]) => (
+                    {Object.entries(col).map(([categoryId, group]) => (
 
-                    <PriceListProductTable
+                      <PriceListProductTable
 
-                      key={categoryId}
+                        key={categoryId}
 
-                      categoryName={group.name}
+                        categoryName={group.name}
 
-                      products={group.products}
+                        products={group.products}
 
-                      onPriceChange={handlePriceChange}
+                        onPriceChange={handlePriceChange}
 
-                      editable={selectedPriceList?.status === "draft"}
+                        editable={selectedPriceList?.status === "draft"}
 
-                    />
+                      />
 
-                  ))}
+                    ))}
 
-                </div>
+                  </div>
 
-              ))}
+                ))}
 
+              </div>
             </div>
 
           </div>
@@ -794,51 +797,52 @@ const PriceListManagement = () => {
 
         return (
 
-  
 
-          <div className="flex flex-1 flex-col p-6">
 
-  
+          <div className="flex flex-1 flex-col overflow-hidden">
 
-            <div className="mb-6">
 
-  
+
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-6 pt-6 pb-4 bg-background-light dark:bg-background-dark">
+
+
 
               <button
 
-  
+
 
                 onClick={() => setView("list")}
 
-  
+
 
                 className="flex items-center gap-1 text-sm text-supplier-accent hover:underline mb-4"
 
-  
+
 
               >
 
-  
+
 
                 <span className="material-symbols-outlined text-base">
 
-  
+
 
                   arrow_back
 
-  
+
 
                 </span>
 
-  
+
 
                 <span>Back to Price Lists</span>
 
-  
+
 
               </button>
 
-  
+
 
               <div className="flex items-center justify-between">
 
@@ -1014,83 +1018,83 @@ const PriceListManagement = () => {
 
               </div>
 
-  
+
 
             </div>
 
-  
 
-    
 
-  
 
-            <div className="flex gap-6">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              <div className="flex gap-6">
 
-  
 
-              {columns.map((col, colIndex) => (
 
-  
+                {columns.map((col, colIndex) => (
 
-                <div key={colIndex} className="w-1/2 space-y-6">
 
-  
 
-                  {Object.entries(col).map(([categoryId, group]) => (
+                  <div key={colIndex} className="w-1/2 space-y-6">
 
-  
 
-                    <PriceListProductTable
 
-  
+                    {Object.entries(col).map(([categoryId, group]) => (
 
-                      key={categoryId}
 
-  
 
-                      categoryName={group.name}
+                      <PriceListProductTable
 
-  
 
-                      products={group.products}
 
-  
+                        key={categoryId}
 
-                      onPriceChange={handlePriceChange}
 
-  
 
-                      editable={false}
+                        categoryName={group.name}
 
-  
 
-                    />
 
-  
+                        products={group.products}
 
-                  ))}
 
-  
 
-                </div>
+                        onPriceChange={handlePriceChange}
 
-  
 
-              ))}
 
-  
+                        editable={false}
 
+
+
+                      />
+
+
+
+                    ))}
+
+
+
+                  </div>
+
+
+
+                ))}
+
+
+
+              </div>
             </div>
 
-  
+
 
           </div>
 
-  
+
 
         );
 
-  
+
 
       };
 
