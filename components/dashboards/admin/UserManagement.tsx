@@ -307,7 +307,7 @@ const UserManagement = () => {
           <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
             Existing Users
           </h2>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -438,6 +438,65 @@ const UserManagement = () => {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="block md:hidden space-y-4">
+            {users.map((user) => (
+              <div key={user.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{user.username}</h3>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    user.role === "Admin"
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      : user.role === "Supplier"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                  }`}>
+                    {user.role}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{user.email}</p>
+                <div>
+                  {user.emailVerification ? (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Confirmed
+                    </span>
+                  ) : (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                      Pending
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2 border-t pt-2">
+                  <button
+                    onClick={() => handleOpenEditModal(user)}
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 inline-flex items-center transition-colors"
+                    title="Edit user"
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      edit
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenDeleteModal(user)}
+                    disabled={user.id === currentUserId}
+                    className={`inline-flex items-center transition-colors ${
+                      user.id === currentUserId
+                        ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                        : "text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                    }`}
+                    title={
+                      user.id === currentUserId
+                        ? "You cannot delete yourself"
+                        : "Delete user"
+                    }
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      delete
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

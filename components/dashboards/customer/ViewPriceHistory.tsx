@@ -191,7 +191,7 @@ const ViewPriceHistory = () => {
               </div>
 
               {/* Price Lists Table */}
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                     <tr>
@@ -235,6 +235,28 @@ const ViewPriceHistory = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="block md:hidden space-y-4 p-4">
+                {supplierData.priceLists.map((priceList) => (
+                  <div key={priceList.$id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{priceList.name}</h3>
+                      {getStatusBadge(priceList.status)}
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Delivery: {format(new Date(priceList.effective_date), "MMM dd")} -{" "}
+                      {format(new Date(priceList.expiry_date), "MMM dd, yyyy")}
+                    </p>
+                    <div className="flex justify-end gap-2 border-t pt-2">
+                      <button
+                        onClick={() => handleViewPriceList(priceList)}
+                        className="text-customer-accent hover:text-opacity-80 text-sm font-medium"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}

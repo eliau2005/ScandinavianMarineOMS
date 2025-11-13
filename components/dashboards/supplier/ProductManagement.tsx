@@ -352,9 +352,9 @@ const ProductManagement = () => {
           </p>
         </div>
       ) : (
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Column */}
-          <div className="flex-1 space-y-6">
+          <div className="w-full lg:w-1/2 space-y-6">
             {categories
               .filter((category) =>
                 filteredProducts.some((p) => p.category_id === category.$id)
@@ -389,7 +389,7 @@ const ProductManagement = () => {
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="hidden md:block overflow-x-auto">
                       <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                           <tr>
@@ -467,13 +467,58 @@ const ProductManagement = () => {
                         </tbody>
                       </table>
                     </div>
+                    <div className="block md:hidden space-y-4 p-4">
+                      {categoryProducts.map((product) => (
+                        <div key={product.$id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{product.name}</h3>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              product.is_active
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                            }`}>
+                              {product.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Unit: {product.unit_of_measure}
+                          </p>
+                          <div className="flex justify-end gap-2 border-t pt-2">
+                            <button
+                              onClick={() => handleEditProduct(product)}
+                              className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                              title="Edit"
+                            >
+                              <span className="material-symbols-outlined text-base">
+                                edit
+                              </span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteConfirm({
+                                  type: "product",
+                                  id: product.$id!,
+                                  name: product.name,
+                                })
+                              }
+                              className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              title="Delete"
+                            >
+                              <span className="material-symbols-outlined text-base">
+                                delete
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
           </div>
 
           {/* Right Column */}
-          <div className="flex-1 space-y-6">
+          <div className="w-full lg:w-1/2 space-y-6">
             {categories
               .filter((category) =>
                 filteredProducts.some((p) => p.category_id === category.$id)
@@ -508,7 +553,7 @@ const ProductManagement = () => {
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="hidden md:block overflow-x-auto">
                       <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                           <tr>
@@ -585,6 +630,51 @@ const ProductManagement = () => {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                    <div className="block md:hidden space-y-4 p-4">
+                      {categoryProducts.map((product) => (
+                        <div key={product.$id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{product.name}</h3>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              product.is_active
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                            }`}>
+                              {product.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Unit: {product.unit_of_measure}
+                          </p>
+                          <div className="flex justify-end gap-2 border-t pt-2">
+                            <button
+                              onClick={() => handleEditProduct(product)}
+                              className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                              title="Edit"
+                            >
+                              <span className="material-symbols-outlined text-base">
+                                edit
+                              </span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setDeleteConfirm({
+                                  type: "product",
+                                  id: product.$id!,
+                                  name: product.name,
+                                })
+                              }
+                              className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              title="Delete"
+                            >
+                              <span className="material-symbols-outlined text-base">
+                                delete
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );

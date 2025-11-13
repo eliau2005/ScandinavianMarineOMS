@@ -145,7 +145,7 @@ const OrderHistory = () => {
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                 <tr>
@@ -208,6 +208,37 @@ const OrderHistory = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="block md:hidden space-y-4 p-4">
+            {orders.map((order) => (
+              <div key={order.$id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{order.order_number}</h3>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                    order.status
+                  )}`}>
+                    {getStatusLabel(order.status)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Supplier: {order.supplier_name}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Date: {format(new Date(order.order_date), "MMM dd, yyyy")}
+                </p>
+                <div className="flex justify-between items-center border-t pt-2">
+                  <p className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                    € {order.total_amount.toFixed(2)}
+                  </p>
+                  <button
+                    onClick={() => handleViewDetails(order)}
+                    className="text-customer-accent hover:text-opacity-80 text-sm font-medium"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

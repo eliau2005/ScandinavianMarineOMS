@@ -333,7 +333,7 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
                 </div>
 
                 {/* Price Lists Table */}
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                       <tr>
@@ -437,6 +437,77 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
                       ))}
                     </tbody>
                   </table>
+                </div>
+                <div className="block md:hidden space-y-4 p-4">
+                  {supplierPriceLists.map((priceList) => (
+                    <div key={priceList.$id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{priceList.name}</h3>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                          priceList.status
+                        )}`}>
+                          {getStatusLabel(priceList.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Effective: {format(new Date(priceList.effective_date), "MMM dd, yyyy")}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Expiry: {priceList.expiry_date ? format(new Date(priceList.expiry_date), "MMM dd, yyyy") : "No expiry"}
+                      </p>
+                      <div className="flex justify-end gap-2 border-t pt-2">
+                        {priceList.status === "pending_approval" ? (
+                          <>
+                            <button
+                              onClick={() => handleApprovePriceList(priceList)}
+                              disabled={processing === priceList.$id}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {processing === priceList.$id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                  <span>Approving...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="material-symbols-outlined text-sm">
+                                    check_circle
+                                  </span>
+                                  <span>Approve</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleRejectPriceList(priceList)}
+                              disabled={processing === priceList.$id}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {processing === priceList.$id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                  <span>Rejecting...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="material-symbols-outlined text-sm">
+                                    cancel
+                                  </span>
+                                  <span>Reject</span>
+                                </>
+                              )}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleViewDetails(priceList)}
+                            className="text-admin-accent hover:text-opacity-80 text-sm font-medium"
+                          >
+                            View Details
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

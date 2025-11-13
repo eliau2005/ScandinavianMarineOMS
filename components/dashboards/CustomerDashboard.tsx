@@ -6,11 +6,18 @@ import ViewPendingOrders from "./customer/ViewPendingOrders";
 import ViewPriceHistory from "./customer/ViewPriceHistory";
 import CustomerNotificationPanel from "./customer/CustomerNotificationPanel";
 import type { Notification } from "../../lib/notificationService";
+import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
 type CustomerView = "dashboard" | "placeOrder" | "pendingOrders" | "orderHistory" | "priceHistory";
 
 const CustomerDashboard = () => {
   const [activeView, setActiveView] = useState<CustomerView>("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   const handleLogout = async () => {
     try {
@@ -188,21 +195,53 @@ const CustomerDashboard = () => {
     { id: "priceHistory", label: "Price History" },
   ];
 
+  const drawer = (
+    <div className="w-64 p-4">
+      <h2 className="text-lg font-semibold mb-4">Menu</h2>
+      <List>
+        {navLinks.map((link) => (
+          <ListItem key={link.id} disablePadding>
+            <ListItemButton
+              onClick={() => {
+                setActiveView(link.id);
+                setMobileMenuOpen(false);
+              }}
+              selected={activeView === link.id}
+            >
+              <ListItemText primary={link.label} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </div>
+  );
+
   return (
     <div className="flex h-screen flex-col bg-background-light dark:bg-background-dark font-display">
       {/* Header with Navigation */}
       <header className="flex h-16 w-full items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-6 sticky top-0 z-10 shadow-sm">
-        <button
-          onClick={() => setActiveView("dashboard")}
-          className="flex items-center hover:opacity-80 transition-opacity"
-        >
-          <span className="material-symbols-outlined text-3xl text-customer-accent mr-2">
-            person
-          </span>
-          <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Customer Portal
-          </h1>
-        </button>
+        <div className="flex items-center">
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <button
+            onClick={() => setActiveView("dashboard")}
+            className="flex items-center hover:opacity-80 transition-opacity"
+          >
+            <span className="material-symbols-outlined text-3xl text-customer-accent mr-2">
+              person
+            </span>
+            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Customer Portal
+            </h1>
+          </button>
+        </div>
 
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
@@ -228,6 +267,14 @@ const CustomerDashboard = () => {
           <span>Logout</span>
         </button>
       </header>
+
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={handleDrawerToggle}
+      >
+        {drawer}
+      </Drawer>
 
       <main className="flex flex-1 overflow-hidden">
         {renderContent()}

@@ -690,11 +690,11 @@ const PriceListManagement = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-6 pb-6">
-              <div className="flex gap-6">
+              <div className="flex flex-col lg:flex-row gap-6">
 
                 {columns.map((col, colIndex) => (
 
-                  <div key={colIndex} className="w-1/2 space-y-6">
+                  <div key={colIndex} className="w-full lg:w-1/2 space-y-6">
 
                     {Object.entries(col).map(([categoryId, group]) => (
 
@@ -1033,7 +1033,7 @@ const PriceListManagement = () => {
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-6 pb-6">
-              <div className="flex gap-6">
+              <div className="flex flex-col lg:flex-row gap-6">
 
 
 
@@ -1041,7 +1041,7 @@ const PriceListManagement = () => {
 
 
 
-                  <div key={colIndex} className="w-1/2 space-y-6">
+                  <div key={colIndex} className="w-full lg:w-1/2 space-y-6">
 
 
 
