@@ -345,7 +345,12 @@ const ViewPriceHistory = () => {
                       return acc;
                     }, {} as Record<string, typeof priceListItems>);
 
-                    return Object.entries(grouped).map(([categoryName, items]) => (
+                    return Object.entries(grouped).map(([categoryName, items]) => {
+                      // Check if this category has VAC pricing enabled
+                      const hasVacPricing = items.length > 0 && items[0].product?.category?.enable_vac_pricing;
+                      const unitOfMeasure = items.length > 0 ? items[0].product?.category?.unit_of_measure || "Box" : "Box";
+
+                      return (
                       <div key={categoryName}>
                         <div className="overflow-x-auto">
                           <table className="w-full">
@@ -355,11 +360,13 @@ const ViewPriceHistory = () => {
                                   Product
                                 </th>
                                 <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                  Price
+                                  Price/{unitOfMeasure}
                                 </th>
-                                <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                  VAC Price
-                                </th>
+                                {hasVacPricing && (
+                                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                    Price/{unitOfMeasure} (VAC)
+                                  </th>
+                                )}
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -376,18 +383,21 @@ const ViewPriceHistory = () => {
                                       ? `€ ${item.price_box.toFixed(2)}`
                                       : "-"}
                                   </td>
-                                  <td className="px-3 py-2 text-sm text-right text-gray-800 dark:text-gray-200">
-                                    {item.price_box_vac !== null && item.price_box_vac !== undefined
-                                      ? `€ ${item.price_box_vac.toFixed(2)}`
-                                      : "-"}
-                                  </td>
+                                  {hasVacPricing && (
+                                    <td className="px-3 py-2 text-sm text-right text-gray-800 dark:text-gray-200">
+                                      {item.price_box_vac !== null && item.price_box_vac !== undefined
+                                        ? `€ ${item.price_box_vac.toFixed(2)}`
+                                        : "-"}
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
                       </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
               )}

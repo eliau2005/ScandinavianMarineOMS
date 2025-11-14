@@ -210,33 +210,42 @@ const ViewPendingOrders = () => {
                   return Object.entries(grouped).map(([categoryName, categoryItems]) => (
                     <div key={categoryName}>
                       <div className="space-y-2">
-                        {categoryItems.map((item, index) => (
+                        {categoryItems.map((item, index) => {
+                          const hasVac = item.quantity_vac > 0;
+                          const hasRegular = item.quantity_regular > 0;
+                          const regularTotal = item.quantity_regular * item.unit_price;
+                          const vacTotal = item.quantity_vac * (item.unit_price_vac || 0);
+
+                          return (
                           <div
                             key={index}
-                            className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                            className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                           >
-                            <div>
+                            <div className="flex justify-between items-start mb-2">
                               <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                 {item.product_name}
                               </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">
-                                € {item.unit_price.toFixed(2)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-800 dark:text-gray-200">
-                                {item.quantity}
-                              </p>
-                            </div>
-                            <div className="text-right">
                               <p className="font-semibold text-gray-800 dark:text-gray-200">
                                 € {item.total.toFixed(2)}
                               </p>
                             </div>
+                            <div className="space-y-1 text-xs">
+                              {hasRegular && (
+                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                  <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
+                                  <span>€{regularTotal.toFixed(2)}</span>
+                                </div>
+                              )}
+                              {hasVac && item.unit_price_vac && (
+                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                  <span>VAC: {item.quantity_vac} × €{item.unit_price_vac.toFixed(2)}</span>
+                                  <span>€{vacTotal.toFixed(2)}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ));

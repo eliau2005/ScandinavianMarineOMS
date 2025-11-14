@@ -130,15 +130,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
   },
+  cellSmall: {
+    fontSize: 8,
+    color: "#6b7280",
+    marginTop: 2,
+  },
   productCol: {
+    width: "45%",
+  },
+  breakdownCol: {
     width: "40%",
-  },
-  unitPriceCol: {
-    width: "30%",
-  },
-  quantityCol: {
-    width: "15%",
-    textAlign: "center",
   },
   totalCol: {
     width: "15%",
@@ -281,11 +282,8 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
                     <Text style={[styles.cellHeader, styles.productCol]}>
                       PRODUCT
                     </Text>
-                    <Text style={[styles.cellHeader, styles.unitPriceCol]}>
-                      UNIT + PRICE
-                    </Text>
-                    <Text style={[styles.cellHeader, styles.quantityCol]}>
-                      QUANTITY
+                    <Text style={[styles.cellHeader, styles.breakdownCol]}>
+                      BREAKDOWN
                     </Text>
                     <Text style={[styles.cellHeader, styles.totalCol]}>
                       TOTAL
@@ -293,7 +291,12 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
                   </View>
 
                   {/* Data Rows */}
-                  {categoryItems.map((item, rowIndex) => (
+                  {categoryItems.map((item, rowIndex) => {
+                    const hasVac = item.quantity_vac > 0;
+                    const hasRegular = item.quantity_regular > 0;
+                    const regularTotal = item.quantity_regular * item.unit_price;
+
+                    return (
                     <View
                       key={item.product_id}
                       style={[
@@ -304,17 +307,24 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
                       <Text style={[styles.cell, styles.productCol]}>
                         {item.product_name}
                       </Text>
-                      <Text style={[styles.cell, styles.unitPriceCol]}>
-                        {formatCurrency(item.unit_price, currentOrder.currency)} / Box
-                      </Text>
-                      <Text style={[styles.cellBold, styles.quantityCol]}>
-                        {item.quantity}
-                      </Text>
+                      <View style={styles.breakdownCol}>
+                        {hasRegular && (
+                          <Text style={styles.cellSmall}>
+                            Regular: {item.quantity_regular} × {formatCurrency(item.unit_price, currentOrder.currency)} = {formatCurrency(regularTotal, currentOrder.currency)}
+                          </Text>
+                        )}
+                        {hasVac && (
+                          <Text style={[styles.cellSmall, { color: '#ea580c' }]}>
+                            VAC: {item.quantity_vac} units - Calculated by supplier
+                          </Text>
+                        )}
+                      </View>
                       <Text style={[styles.cellBold, styles.totalCol]}>
-                        {formatCurrency(item.total, currentOrder.currency)}
+                        {formatCurrency(regularTotal, currentOrder.currency)}
                       </Text>
                     </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
             ))}
@@ -324,6 +334,19 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
               <Text style={styles.totalLabel}>TOTAL:</Text>
               <Text style={styles.totalAmount}>
                 {formatCurrency(currentOrder.total_amount, currentOrder.currency)}
+              </Text>
+            </View>
+
+            {/* VAC Surcharge Warning */}
+            <View style={{
+              marginTop: 10,
+              padding: 10,
+              backgroundColor: '#fff7ed',
+              border: '1px solid #fed7aa',
+              borderRadius: 4
+            }}>
+              <Text style={{ fontSize: 9, color: '#9a3412', fontWeight: 'bold' }}>
+                NOTE: VAC packaging surcharges are not included in the total above. These charges will be calculated by the supplier based on actual weight and included in the final invoice.
               </Text>
             </View>
 

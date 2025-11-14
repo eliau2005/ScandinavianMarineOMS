@@ -81,8 +81,7 @@ export const PriceListItemSchema = z.object({
   price_list_id: z.string().min(1, "Price list ID is required"),
   product_id: z.string().min(1, "Product ID is required"),
   price_box: z.number().min(0, "Price must be positive"),
-  price_box_vac: z.number().min(0).optional().nullable(),
-  vac_surcharge: z.number().min(0).optional().nullable(),
+  vac_surcharge_per_kg: z.number().min(0).optional().nullable(),
   currency: z.enum(["EUR", "USD", "GBP"]).default("EUR"),
   min_quantity: z.number().int().min(0).optional().nullable(),
   max_quantity: z.number().int().min(0).optional().nullable(),
@@ -147,7 +146,7 @@ export const BulkPriceUpdateSchema = z.object({
     z.object({
       product_id: z.string().min(1),
       price_box: z.number().min(0),
-      price_box_vac: z.number().min(0).optional().nullable(),
+      vac_surcharge_per_kg: z.number().min(0).optional().nullable(),
     })
   ),
 });
@@ -174,8 +173,7 @@ export interface PriceListTableRow {
   product: Product;
   category: ProductCategory;
   price_box: number | null;
-  price_box_vac: number | null;
-  vac_surcharge: number | null;
+  vac_surcharge_per_kg: number | null;
   is_available: boolean;
   item_id?: string; // Price list item ID if exists
 }

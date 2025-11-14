@@ -89,8 +89,7 @@ const PlaceOrder = () => {
         product: item.product!,
         category: item.product?.category!,
         price_box: item.price_box,
-        price_box_vac: item.price_box_vac,
-        vac_surcharge: item.vac_surcharge,
+        vac_surcharge_per_kg: item.vac_surcharge_per_kg,
         is_available: item.is_available,
         item_id: item.$id,
       })) || [];
@@ -127,18 +126,20 @@ const PlaceOrder = () => {
   const handleQuantityChange = (
     productId: string,
     productName: string,
-    categoryId: string | undefined,
-    categoryName: string | undefined,
     price: number,
-    quantity: number
+    quantityRegular: number,
+    quantityVac: number
   ) => {
     const newCart = new Map(cart);
-    if (quantity > 0) {
+    const totalQuantity = quantityRegular + quantityVac;
+
+    if (totalQuantity > 0) {
       newCart.set(productId, {
         product_id: productId,
         product_name: productName,
         unit_price: price,
-        quantity,
+        quantity_regular: quantityRegular,
+        quantity_vac: quantityVac,
       });
     } else {
       newCart.delete(productId);
@@ -185,14 +186,17 @@ const PlaceOrder = () => {
           }
         }
 
+        const regularTotal = item.quantity_regular * item.unit_price;
+
         return {
           product_id: item.product_id,
           product_name: item.product_name,
           category_id: categoryId,
           category_name: categoryName,
-          quantity: item.quantity,
+          quantity_regular: item.quantity_regular,
+          quantity_vac: item.quantity_vac,
           unit_price: item.unit_price,
-          total: item.quantity * item.unit_price,
+          total: regularTotal,
         };
       });
 
@@ -239,17 +243,24 @@ const PlaceOrder = () => {
   };
 
   const cartTotal = Array.from(cart.values()).reduce(
-    (sum, item) => sum + item.quantity * item.unit_price,
+    (sum, item) => {
+      const regularTotal = item.quantity_regular * item.unit_price;
+      return sum + regularTotal;
+    },
     0
   );
 
   const cartItemCount = Array.from(cart.values()).reduce(
-    (sum, item) => sum + item.quantity,
+    (sum, item) => sum + item.quantity_regular + item.quantity_vac,
     0
   );
 
   const currentCategoryName = categories[currentCategoryIndex];
   const currentProducts = currentCategoryName ? productsMap.get(currentCategoryName) || [] : [];
+
+  // Check if current category has VAC pricing enabled
+  const currentCategoryHasVac = currentProducts.length > 0 && currentProducts[0].category?.enable_vac_pricing;
+  const currentCategoryUnit = currentProducts.length > 0 ? currentProducts[0].category?.unit_of_measure || "Box" : "Box";
 
   // Group cart items by category for summary modal
   const groupedCartItems = Array.from(cart.values()).reduce((acc, item) => {
@@ -448,11 +459,21 @@ const PlaceOrder = () => {
                       Unit
                     </th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Price
+                      {currentCategoryUnit}
                     </th>
+                    {currentCategoryHasVac && (
+                      <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {currentCategoryUnit} (VAC)
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Quantity
+                      Qty (Regular)
                     </th>
+                    {currentCategoryHasVac && (
+                      <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Qty (VAC)
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Subtotal
                     </th>
@@ -461,8 +482,9 @@ const PlaceOrder = () => {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {currentProducts.map((product) => {
                     const cartItem = cart.get(product.product.$id!);
-                    const quantity = cartItem?.quantity || 0;
-                    const subtotal = quantity * (product.price_box || 0);
+                    const quantityRegular = cartItem?.quantity_regular || 0;
+                    const quantityVac = cartItem?.quantity_vac || 0;
+                    const subtotal = quantityRegular * (product.price_box || 0);
 
                     return (
                       <tr
@@ -480,10 +502,27 @@ const PlaceOrder = () => {
                           </p>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                            € {product.price_box?.toFixed(2)}
-                          </p>
+                          <div className="text-sm">
+                            <p className="font-semibold text-gray-800 dark:text-gray-200">
+                              € {product.price_box?.toFixed(2)}
+                            </p>
+                          </div>
                         </td>
+                        {currentCategoryHasVac && (
+                          <td className="px-6 py-4 text-right">
+                            <div className="text-sm">
+                              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                € {product.price_box?.toFixed(2)}
+                              </p>
+                              {product.vac_surcharge_per_kg && product.vac_surcharge_per_kg > 0 && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                  +€{product.vac_surcharge_per_kg.toFixed(2)}/kg
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                        {/* Regular Quantity */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 justify-center">
                             <button
@@ -491,10 +530,9 @@ const PlaceOrder = () => {
                                 handleQuantityChange(
                                   product.product.$id!,
                                   product.product.name,
-                                  product.category.$id,
-                                  product.category.name,
                                   product.price_box!,
-                                  Math.max(0, quantity - 1)
+                                  Math.max(0, quantityRegular - 1),
+                                  quantityVac
                                 )
                               }
                               className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
@@ -503,15 +541,14 @@ const PlaceOrder = () => {
                             </button>
                             <input
                               type="number"
-                              value={quantity}
+                              value={quantityRegular}
                               onChange={(e) =>
                                 handleQuantityChange(
                                   product.product.$id!,
                                   product.product.name,
-                                  product.category.$id,
-                                  product.category.name,
                                   product.price_box!,
-                                  parseFloat(e.target.value) || 0
+                                  parseFloat(e.target.value) || 0,
+                                  quantityVac
                                 )
                               }
                               className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
@@ -523,10 +560,9 @@ const PlaceOrder = () => {
                                 handleQuantityChange(
                                   product.product.$id!,
                                   product.product.name,
-                                  product.category.$id,
-                                  product.category.name,
                                   product.price_box!,
-                                  quantity + 1
+                                  quantityRegular + 1,
+                                  quantityVac
                                 )
                               }
                               className="w-8 h-8 flex items-center justify-center bg-customer-accent text-white rounded hover:bg-opacity-90 transition-colors"
@@ -535,9 +571,60 @@ const PlaceOrder = () => {
                             </button>
                           </div>
                         </td>
+                        {/* VAC Quantity */}
+                        {currentCategoryHasVac && (
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 justify-center">
+                              <button
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    product.product.$id!,
+                                    product.product.name,
+                                    product.price_box!,
+                                    quantityRegular,
+                                    Math.max(0, quantityVac - 1)
+                                  )
+                                }
+                                className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-lg">remove</span>
+                              </button>
+                              <input
+                                type="number"
+                                value={quantityVac}
+                                onChange={(e) =>
+                                  handleQuantityChange(
+                                    product.product.$id!,
+                                    product.product.name,
+                                    product.price_box!,
+                                    quantityRegular,
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
+                                min="0"
+                                step="0.5"
+                              />
+                              <button
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    product.product.$id!,
+                                    product.product.name,
+                                    product.price_box!,
+                                    quantityRegular,
+                                    quantityVac + 1
+                                  )
+                                }
+                                className="w-8 h-8 flex items-center justify-center bg-customer-accent text-white rounded hover:bg-opacity-90 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-lg">add</span>
+                              </button>
+                            </div>
+                          </td>
+                        )}
                         <td className="px-6 py-4 text-right">
                           <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                            {quantity > 0 ? `€ ${subtotal.toFixed(2)}` : '-'}
+                            {subtotal > 0 ? `€ ${subtotal.toFixed(2)}` : '-'}
                           </p>
                         </td>
                       </tr>
@@ -590,33 +677,41 @@ const PlaceOrder = () => {
               {Object.entries(groupedCartItems).map(([categoryName, items]) => (
                 <div key={categoryName}>
                   <div className="space-y-2">
-                    {items.map((item) => (
+                    {items.map((item) => {
+                      const hasVac = item.quantity_vac > 0;
+                      const hasRegular = item.quantity_regular > 0;
+                      const regularTotal = item.quantity_regular * item.unit_price;
+
+                      return (
                       <div
                         key={item.product_id}
-                        className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                        className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                       >
-                        <div>
+                        <div className="flex justify-between items-start mb-2">
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                             {item.product_name}
                           </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            € {item.unit_price.toFixed(2)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-800 dark:text-gray-200">
-                            × {item.quantity}
-                          </p>
-                        </div>
-                        <div className="text-right">
                           <p className="font-semibold text-gray-800 dark:text-gray-200">
-                            € {(item.quantity * item.unit_price).toFixed(2)}
+                            € {regularTotal.toFixed(2)}
                           </p>
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          {hasRegular && (
+                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                              <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
+                              <span>€{regularTotal.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {hasVac && (
+                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                              <span>VAC: {item.quantity_vac} units</span>
+                              <span className="text-orange-600 dark:text-orange-400">To be calculated</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -639,7 +734,7 @@ const PlaceOrder = () => {
 
           {/* Total */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-3">
               <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                 Total
               </span>
@@ -647,6 +742,19 @@ const PlaceOrder = () => {
                 € {cartTotal.toFixed(2)}
               </span>
             </div>
+
+            {/* VAC Surcharge Warning */}
+            <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg mt-0.5">
+                  info
+                </span>
+                <p className="text-xs text-orange-800 dark:text-orange-200">
+                  <strong>Note:</strong> The total amount does not include VAC surcharges. This charge will be calculated by the supplier in the final invoice based on the actual weight of the products.
+                </p>
+              </div>
+            </div>
+
             <button
               onClick={handlePlaceOrder}
               disabled={placing}

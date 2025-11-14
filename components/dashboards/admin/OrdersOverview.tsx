@@ -548,33 +548,41 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
                   return Object.entries(grouped).map(([categoryName, categoryItems]) => (
                     <div key={categoryName}>
                       <div className="space-y-2">
-                        {categoryItems.map((item, index) => (
+                        {categoryItems.map((item, index) => {
+                          const hasVac = item.quantity_vac > 0;
+                          const hasRegular = item.quantity_regular > 0;
+                          const regularTotal = item.quantity_regular * item.unit_price;
+
+                          return (
                           <div
                             key={index}
-                            className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                            className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                           >
-                            <div>
+                            <div className="flex justify-between items-start mb-2">
                               <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                 {item.product_name}
                               </p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">
-                                € {item.unit_price.toFixed(2)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-800 dark:text-gray-200">
-                                {item.quantity}
-                              </p>
-                            </div>
-                            <div className="text-right">
                               <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                € {item.total.toFixed(2)}
+                                € {regularTotal.toFixed(2)}
                               </p>
+                            </div>
+                            <div className="space-y-1 text-xs">
+                              {hasRegular && (
+                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                  <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
+                                  <span>€{regularTotal.toFixed(2)}</span>
+                                </div>
+                              )}
+                              {hasVac && (
+                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                  <span>VAC: {item.quantity_vac} units</span>
+                                  <span className="text-orange-600 dark:text-orange-400 font-medium">Calculated by supplier</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ));
@@ -584,13 +592,25 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
 
             {/* Total */}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-3">
                 <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                   Total
                 </span>
                 <span className="text-2xl font-bold text-admin-accent">
                   € {selectedOrder.total_amount.toFixed(2)}
                 </span>
+              </div>
+
+              {/* VAC Surcharge Note */}
+              <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg mt-0.5">
+                    info
+                  </span>
+                  <p className="text-xs text-orange-800 dark:text-orange-200">
+                    <strong>Note:</strong> VAC packaging surcharges are not included in the total above. These charges will be calculated by the supplier based on actual weight.
+                  </p>
+                </div>
               </div>
             </div>
 

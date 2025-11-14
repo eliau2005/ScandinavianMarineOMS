@@ -13,7 +13,7 @@ import type { PriceListTableRow } from "../../types/priceList";
 
 interface PriceTableProps {
   data: PriceListTableRow[];
-  onPriceChange?: (productId: string, field: "price_box" | "price_box_vac", value: number) => void;
+  onPriceChange?: (productId: string, field: "price_box" | "vac_surcharge_per_kg", value: number) => void;
   editable?: boolean;
   loading?: boolean;
 }
@@ -132,52 +132,37 @@ const PriceTable: React.FC<PriceTableProps> = ({
 
             if (showVacPricing) {
               baseColumns.push(
-                columnHelper.accessor("price_box_vac", {
-                  id: "price_box_vac",
-                  header: `Price/${unitOfMeasure} (VAC)`,
+                columnHelper.accessor("vac_surcharge_per_kg", {
+                  id: "vac_surcharge_per_kg",
+                  header: `${unitOfMeasure} (VAC +€/kg)`,
                   cell: (info) => {
                     const value = info.getValue();
                     const productId = info.row.original.product.$id!;
-                    const surcharge = info.row.original.vac_surcharge;
 
                     if (editable && onPriceChange) {
                       return (
-                        <div className="flex flex-col gap-1">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={value || ""}
-                            onChange={(e) =>
-                              onPriceChange(
-                                productId,
-                                "price_box_vac",
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-                            placeholder="0.00"
-                          />
-                          {surcharge && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              +€{surcharge.toFixed(2)}/kg
-                            </span>
-                          )}
-                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={value || ""}
+                          onChange={(e) =>
+                            onPriceChange(
+                              productId,
+                              "vac_surcharge_per_kg",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                          placeholder="0.00"
+                        />
                       );
                     }
 
-                    return value !== null ? (
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">
-                          € {value.toFixed(2)}
-                        </span>
-                        {surcharge && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            +€{surcharge.toFixed(2)}/kg
-                          </span>
-                        )}
-                      </div>
+                    return value !== null && value > 0 ? (
+                      <span className="text-gray-800 dark:text-gray-200">
+                        +€{value.toFixed(2)}/kg
+                      </span>
                     ) : (
                       <span className="text-gray-400 dark:text-gray-600">-</span>
                     );

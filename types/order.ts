@@ -40,9 +40,10 @@ export const OrderItemSchema = z.object({
   product_name: z.string().min(1),
   category_id: z.string().optional(), // Category at time of order
   category_name: z.string().optional(), // Category name at time of order
-  quantity: z.number().min(0.01),
-  unit_price: z.number().min(0),
-  total: z.number().min(0),
+  quantity_regular: z.number().min(0).default(0), // Quantity for regular packaging
+  quantity_vac: z.number().min(0).default(0), // Quantity for VAC packaging
+  unit_price: z.number().min(0), // Regular packaging price (per unit)
+  total: z.number().min(0), // Total for regular packaging only (VAC calculated by supplier)
   notes: z.string().optional(),
 });
 
@@ -161,7 +162,8 @@ export interface CartItem {
   product_id: string;
   product_name: string;
   unit_price: number;
-  quantity: number;
+  quantity_regular: number; // Quantity for regular packaging
+  quantity_vac: number; // Quantity for VAC packaging
 }
 
 // ============================================================================
@@ -223,10 +225,14 @@ export const stringifyOrderItems = (items: OrderItem[]): string => {
 };
 
 /**
- * Calculate order total from items
+ * Calculate order total from items (regular quantities only)
+ * VAC quantities are not included in the system calculation
  */
 export const calculateOrderTotal = (items: OrderItem[]): number => {
-  return items.reduce((sum, item) => sum + item.total, 0);
+  return items.reduce((sum, item) => {
+    const regularTotal = (item.quantity_regular || 0) * item.unit_price;
+    return sum + regularTotal;
+  }, 0);
 };
 
 /**

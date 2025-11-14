@@ -126,8 +126,7 @@ const PriceListManagement = () => {
           product,
           category: categoryMap.get(product.category_id)!,
           price_box: item?.price_box || null,
-          price_box_vac: item?.price_box_vac || null,
-          vac_surcharge: item?.vac_surcharge || null,
+          vac_surcharge_per_kg: item?.vac_surcharge_per_kg || null,
           is_available: item?.is_available ?? true,
           item_id: item?.$id,
         };
@@ -326,7 +325,7 @@ const PriceListManagement = () => {
 
   const handlePriceChange = (
     productId: string,
-    field: "price_box" | "price_box_vac",
+    field: "price_box" | "vac_surcharge_per_kg",
     value: number
   ) => {
     setTableData((prev) =>
@@ -344,7 +343,7 @@ const PriceListManagement = () => {
       prev.map((row) => ({
         ...row,
         price_box: null,
-        price_box_vac: null,
+        vac_surcharge_per_kg: null,
       }))
     );
     showNotification("info", "All prices have been cleared");
@@ -365,16 +364,12 @@ const PriceListManagement = () => {
       const creates: any[] = [];
 
       tableData.forEach((row) => {
-        if (row.price_box !== null || row.price_box_vac !== null) {
+        if (row.price_box !== null || row.vac_surcharge_per_kg !== null) {
           const itemData = {
             price_list_id: selectedPriceList.$id!,
             product_id: row.product.$id!,
             price_box: row.price_box || 0,
-            price_box_vac: row.price_box_vac || null,
-            vac_surcharge:
-              row.price_box && row.price_box_vac
-                ? row.price_box_vac - row.price_box
-                : null,
+            vac_surcharge_per_kg: row.vac_surcharge_per_kg || null,
             currency: "EUR",
             is_available: row.is_available,
           };
