@@ -20,6 +20,10 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
   onPriceChange,
   editable,
 }) => {
+  // Check if this category has VAC pricing enabled
+  const hasVacPricing = products.length > 0 && products[0].category?.enable_vac_pricing;
+  const unitOfMeasure = products.length > 0 ? products[0].category?.unit_of_measure || "Box" : "Box";
+
   return (
     <>
       {/* Category Header */}
@@ -61,8 +65,13 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
                   Unit
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                  Price
+                  Price/{unitOfMeasure}
                 </th>
+                {hasVacPricing && (
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Price/{unitOfMeasure} (VAC)
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -79,7 +88,7 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
                   <td className="px-4 py-3">
                     <div className="flex justify-end">
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                        {row.product.unit_of_measure}
+                        {row.category.unit_of_measure}
                       </span>
                     </div>
                   </td>
@@ -108,6 +117,33 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
                       )}
                     </div>
                   </td>
+                  {hasVacPricing && (
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">
+                        {editable ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={row.price_box_vac || ""}
+                            onChange={(e) =>
+                              onPriceChange(
+                                row.product.$id!,
+                                "price_box_vac",
+                                parseFloat(e.target.value)
+                              )
+                            }
+                            className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-right focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+                            placeholder="0.00"
+                          />
+                        ) : (
+                          <span className="font-semibold text-gray-800 dark:text-gray-200">
+                            {row.price_box_vac !== null ? `€ ${row.price_box_vac.toFixed(2)}` : "-"}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

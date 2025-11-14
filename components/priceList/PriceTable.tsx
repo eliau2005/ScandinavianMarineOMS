@@ -82,6 +82,7 @@ const PriceTable: React.FC<PriceTableProps> = ({
 
           const columns = useMemo(() => {
             const showVacPricing = group.category?.enable_vac_pricing ?? false;
+            const unitOfMeasure = group.category?.unit_of_measure || "Box";
 
             const baseColumns = [
               columnHelper.accessor("product.name", {
@@ -97,7 +98,7 @@ const PriceTable: React.FC<PriceTableProps> = ({
               }),
               columnHelper.accessor("price_box", {
                 id: "price_box",
-                header: "Price/Box",
+                header: `Price/${unitOfMeasure}`,
                 cell: (info) => {
                   const value = info.getValue();
                   const productId = info.row.original.product.$id!;
@@ -133,7 +134,7 @@ const PriceTable: React.FC<PriceTableProps> = ({
               baseColumns.push(
                 columnHelper.accessor("price_box_vac", {
                   id: "price_box_vac",
-                  header: "Price/Box (VAC)",
+                  header: `Price/${unitOfMeasure} (VAC)`,
                   cell: (info) => {
                     const value = info.getValue();
                     const productId = info.row.original.product.$id!;

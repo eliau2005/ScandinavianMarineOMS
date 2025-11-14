@@ -219,7 +219,7 @@ const PriceListPDFDocument: React.FC<PriceListPDFDocumentProps> = ({
                     {row.product.name}
                   </Text>
                   <Text style={[styles.cell, styles.unitCol]}>
-                    {row.product.unit_of_measure}
+                    {row.category.unit_of_measure}
                   </Text>
                   <Text style={[styles.cellBold, styles.priceCol]}>
                     {row.price_box ? formatCurrency(row.price_box) : "-"}

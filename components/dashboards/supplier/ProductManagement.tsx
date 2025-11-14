@@ -769,8 +769,6 @@ const ProductManagement = () => {
         }}
         onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct}
         categories={categories}
-        units={units}
-        onAddUnit={() => setShowUnitModal(true)}
         editProduct={editingProduct}
       />
 

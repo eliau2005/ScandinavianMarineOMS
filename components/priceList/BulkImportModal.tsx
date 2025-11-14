@@ -51,7 +51,6 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
         products.push({
           category_id: selectedCategory,
           name: name,
-          unit_of_measure: "box", // Default unit
           display_order: i,
           is_active: true,
         });

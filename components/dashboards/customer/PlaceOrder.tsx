@@ -476,7 +476,7 @@ const PlaceOrder = () => {
                         </td>
                         <td className="px-6 py-4">
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {product.product.unit_of_measure}
+                            {product.category.unit_of_measure}
                           </p>
                         </td>
                         <td className="px-6 py-4 text-right">

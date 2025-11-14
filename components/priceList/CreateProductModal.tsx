@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../common/Modal";
-import type { Product, ProductCategory, UnitOfMeasure } from "../../types/priceList";
+import type { Product, ProductCategory } from "../../types/priceList";
 
 interface CreateProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Omit<Product, "$id">) => Promise<void>;
   categories: ProductCategory[];
-  units: UnitOfMeasure[];
-  onAddUnit?: () => void;
   editProduct?: Product;
 }
 
@@ -17,14 +15,11 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
   onClose,
   onSubmit,
   categories,
-  units,
-  onAddUnit,
   editProduct,
 }) => {
   const [formData, setFormData] = useState({
     category_id: editProduct?.category_id || "",
     name: editProduct?.name || "",
-    unit_of_measure: editProduct?.unit_of_measure || "box",
     display_order: editProduct?.display_order || 0,
     is_active: editProduct?.is_active ?? true,
   });
@@ -36,7 +31,6 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setFormData({
         category_id: editProduct.category_id,
         name: editProduct.name,
-        unit_of_measure: editProduct.unit_of_measure,
         display_order: editProduct.display_order,
         is_active: editProduct.is_active,
       });
@@ -55,17 +49,12 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setError("Product name is required");
       return;
     }
-    if (!formData.unit_of_measure.trim()) {
-      setError("Unit of measure is required");
-      return;
-    }
 
     setLoading(true);
     try {
       await onSubmit({
         category_id: formData.category_id,
         name: formData.name.trim(),
-        unit_of_measure: formData.unit_of_measure,
         display_order: formData.display_order,
         is_active: formData.is_active,
       });
@@ -74,7 +63,6 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setFormData({
         category_id: "",
         name: "",
-        unit_of_measure: "box",
         display_order: 0,
         is_active: true,
       });
@@ -91,7 +79,6 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
       setFormData({
         category_id: "",
         name: "",
-        unit_of_measure: "box",
         display_order: 0,
         is_active: true,
       });
@@ -148,41 +135,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
             disabled={loading}
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Enter the fish name only
-          </p>
-        </div>
-
-        {/* Unit of Measure */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Unit of Measure <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-2">
-            <select
-              value={formData.unit_of_measure}
-              onChange={(e) => setFormData({ ...formData, unit_of_measure: e.target.value })}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-              disabled={loading}
-            >
-              {units.map((unit) => (
-                <option key={unit.$id} value={unit.unit_name}>
-                  {unit.unit_name}
-                </option>
-              ))}
-            </select>
-            {onAddUnit && (
-              <button
-                type="button"
-                onClick={onAddUnit}
-                className="px-3 py-2 text-sm font-medium text-white bg-supplier-accent rounded-lg hover:bg-opacity-90 transition-colors flex items-center gap-1"
-                title="Add new unit"
-              >
-                <span className="material-symbols-outlined text-base">add</span>
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Select a unit or click + to add a new one
+            Enter the fish name only. Unit of measure is set at the category level.
           </p>
         </div>
 
