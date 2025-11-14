@@ -12,16 +12,19 @@ The Product and Category Management system is now **fully operational**. You can
 Organize your products into categories like Salmon, Cod, Turbot, etc.
 
 ### 2. **Create Individual Products**
-Add products one at a time with full attribute support (trim type, size, skin type, packaging).
+Add products one at a time with simple product names.
 
 ### 3. **Bulk Import Products**
-Import multiple products at once using simple text formats.
+Import multiple products at once using simple text format (one product name per line).
 
-### 4. **Edit Products & Categories**
+### 4. **Manage Units of Measure**
+Create custom units of measure (kg, box, piece, etc.) for your products.
+
+### 5. **Edit Products & Categories**
 Modify any product or category after creation.
 
-### 5. **Delete Products & Categories**
-Remove products or categories (with safety checks).
+### 6. **Delete Products & Categories**
+Remove products or categories with built-in safety checks to prevent deletion of items in use.
 
 ---
 
@@ -41,57 +44,60 @@ Remove products or categories (with safety checks).
    - **Name**: e.g., "Salmon"
    - **Display Order**: 1 (lower numbers appear first)
    - **Icon**: Click a suggestion or type a Material Symbol name
-   - **Description**: Optional description
+   - **Enable VAC Pricing**: Check if this category needs VAC (vacuum-sealed) pricing
 4. Click **"Create Category"**
 
 **Example Categories to Create:**
-- Salmon (order: 1, icon: set_meal)
-- Cod (order: 2, icon: phishing)
-- Turbot (order: 3, icon: water_drop)
-- Doversoles (order: 4, icon: restaurant)
-- Red Mullet (order: 5, icon: lunch_dining)
+- Salmon (order: 1, icon: set_meal, VAC: Yes)
+- Cod (order: 2, icon: phishing, VAC: Yes)
+- Turbot (order: 3, icon: water_drop, VAC: No)
+- Doversoles (order: 4, icon: restaurant, VAC: No)
+- Red Mullet (order: 5, icon: lunch_dining, VAC: No)
 
-### Step 3: Create Products (Option A: One at a Time)
+### Step 3: Create Custom Units (Optional)
+
+1. Click **"New Product"** button
+2. In the product creation modal, click **"+ Add New Unit"**
+3. Enter your custom unit name (e.g., "kg", "piece", "tray")
+4. Click **"Create Unit"**
+
+**Note:** The default unit "box" is automatically created for all suppliers.
+
+### Step 4: Create Products (Option A: One at a Time)
 
 1. Switch to the **"Products"** tab
 2. Click **"New Product"** button
 3. Fill in the form:
    - **Category**: Select a category
-   - **Base Name**: e.g., "Salmon Fillet"
-   - **Trim Type**: e.g., "A" (optional)
-   - **Size Range**: e.g., "1000/1400" (optional)
-   - **Skin Type**: e.g., "SCALED" (optional)
-   - **Packaging Type**: e.g., "PBI" (optional)
-4. Click **"Auto-Generate"** to create the full product name from the fields
-5. Adjust the **Full Product Name** if needed
-6. Set **Weight Unit**, **Display Order**, and **SKU** (optional)
-7. Click **"Create Product"**
+   - **Product Name**: e.g., "Salmon Fillet" (the simple fish name)
+   - **Unit of Measure**: Select from your available units
+   - **Display Order**: Set sort order (optional)
+4. Click **"Create Product"**
 
-### Step 4: Create Products (Option B: Bulk Import)
+### Step 5: Create Products (Option B: Bulk Import)
 
 1. Go to **"Products"** tab
 2. Click **"Bulk Import"** button
 3. Select a **Category** (all products will be assigned to this category)
-4. Paste your product list (one per line):
+4. Paste your product list (one product name per line):
 
-**Simple Format:**
+**Format:**
 ```
-Salmonfillet Trim A 1000/1400 SCALED PBI
-Salmonfillet Trim A 1400/1800 SCALED PBI
-Salmonfillet Trim B 1000/1400 SCALED PBI
-```
-
-**Detailed Format (using | separator):**
-```
-Salmonfillet Trim A 1000/1400 SCALED PBI | A | 1000/1400 | SCALED | PBI
-Salmonfillet Trim B 1000/1400 SCALED PBI | B | 1000/1400 | SCALED | PBI
+Salmon Fillet
+Cod Fillet
+Tuna Steak
+Shrimp
+Lobster Tail
+Crab Meat
+Halibut Fillet
+Sea Bass Whole
 ```
 
 5. Click **"Parse & Preview"** to see how products will be created
 6. Review the preview
 7. Click **"Import X Products"**
 
-**Pro Tip:** Click "Load Example" in the bulk import modal to see all supported formats!
+**Pro Tip:** Click "Load Example" in the bulk import modal to see the correct format!
 
 ---
 
@@ -99,23 +105,24 @@ Salmonfillet Trim B 1000/1400 SCALED PBI | B | 1000/1400 | SCALED | PBI
 
 ### Product Categories
 
-**Purpose:** Organize products into logical groups for easier management and display.
+**Purpose:** Organize products into logical groups and control VAC pricing options.
 
 **Fields:**
 - **Name**: Category name (e.g., "Salmon", "Cod")
 - **Display Order**: Controls sort order (lower = earlier)
 - **Icon**: Material Symbol for visual identification
-- **Description**: Optional details about the category
+- **Enable VAC Pricing**: Whether products in this category can have vacuum-sealed pricing
 - **Active**: Whether this category is currently in use
 
 **Category Card Shows:**
 - Category name and icon
-- Display order
 - Number of products in category
 - Active/Inactive status
 - Edit and Delete buttons
 
-**Safety Feature:** You cannot delete a category that has products. Delete the products first.
+**Safety Feature:**
+- You cannot delete a category that has products in active, pending approval, or archived price lists
+- Delete the products first, or wait until price lists are no longer in use
 
 ---
 
@@ -125,31 +132,38 @@ Salmonfillet Trim B 1000/1400 SCALED PBI | B | 1000/1400 | SCALED | PBI
 
 **Fields:**
 - **Category**: Which category this product belongs to
-- **Base Name**: Short name (e.g., "Salmon Fillet")
-- **Full Product Name**: Complete name as it appears on price lists
-- **Trim Type**: Quality grade (A, B, D, E, etc.)
-- **Size Range**: Weight or size range (1000/1400, 2-3 KG, etc.)
-- **Skin Type**: Skin preparation (SCALED, Skin On, Skinless, etc.)
-- **Packaging Type**: How it's packaged (PBI, PBO, SUP, etc.)
-- **Weight Unit**: kg or gr
+- **Name**: Simple product name (e.g., "Salmon Fillet", "Cod Whole", "Tuna Steak")
+- **Unit of Measure**: How the product is sold (box, kg, piece, etc.)
 - **Display Order**: Sort order within category
-- **SKU**: Stock Keeping Unit (optional)
 - **Active**: Whether this product is available
 
-**Auto-Generate Feature:**
-The "Auto-Generate" button creates the full product name by combining:
-```
-Base Name + Trim Type + Size Range + Skin Type + Packaging Type
-```
+**Product Display:**
+Products are displayed in tables grouped by category with the following columns:
+- Product Name
+- Unit
+- Status (Active/Inactive)
+- Actions (Edit/Delete)
 
-Example:
-- Base Name: "Salmon Fillet"
-- Trim: "A"
-- Size: "1000/1400"
-- Skin: "SCALED"
-- Packaging: "PBI"
+**Simplified Structure:**
+The product system has been simplified to focus on core data only. Products are identified by their simple name and category, making management easier and more intuitive.
 
-Auto-generates: "Salmon Fillet A 1000/1400 SCALED PBI"
+---
+
+### Units of Measure
+
+**Purpose:** Define how products are sold and measured.
+
+**How It Works:**
+- Each supplier has their own custom units
+- Default unit "box" is auto-created for all suppliers
+- Suppliers can add custom units like "kg", "piece", "tray", etc.
+- Units can be selected when creating or editing products
+
+**Creating Units:**
+1. Open the product creation modal
+2. Click **"+ Add New Unit"** button
+3. Enter the unit name
+4. The unit is immediately available for use
 
 ---
 
@@ -157,38 +171,33 @@ Auto-generates: "Salmon Fillet A 1000/1400 SCALED PBI"
 
 **Purpose:** Quickly add many products at once.
 
-**Supported Formats:**
+**Format:**
+One product name per line - that's it!
 
-#### 1. Simple (Product Name Only)
+**Example:**
 ```
-Salmonfillet Trim A 1000/1400 SCALED PBI
-Cod Fillet Skin On 200/400 GR
-Doversoles 2/300 GR
-```
-
-#### 2. Pipe-Separated (Name | Trim | Size | Skin | Packaging | SKU)
-```
-Salmonfillet Trim A | A | 1000/1400 | SCALED | PBI | SAL-A-1014
-Salmon HOG 2-3 | | 2-3 | | SUP | SAL-HOG-23
-```
-
-#### 3. CSV (Comma-Separated)
-```
-Salmonfillet Trim A,A,1000/1400,SCALED,PBI,SAL-A-1014
-Doversoles 2/300 GR,,,,,DOV-2-300
+Salmon Fillet
+Cod Fillet
+Tuna Steak
+Halibut Fillet
+Sea Bass Whole
+Shrimp
+Lobster Tail
+Crab Meat
 ```
 
 **How It Works:**
 1. Select category first (required)
-2. Paste your product data
+2. Paste your product names (one per line)
 3. Click "Parse & Preview"
 4. System shows you exactly what will be created
 5. Review and confirm
 6. All products are imported at once
 
 **Tips:**
-- Leave fields empty by using extra commas or pipes
-- The system auto-generates base names
+- Each line becomes one product
+- Empty lines are ignored
+- All products get the default unit "box"
 - Display order is set automatically based on order in the list
 - All products start as "Active"
 
@@ -199,8 +208,10 @@ Doversoles 2/300 GR,,,,,DOV-2-300
 ### Products Tab
 
 **Features:**
-- Search products by name, base name, or SKU
-- Table showing: Product Name, Category, SKU, Status
+- Search products by name
+- Tables grouped by category
+- Two-column layout for better space utilization
+- Category headers with icons
 - Edit button (pencil icon) for each product
 - Delete button (trash icon) for each product
 - "New Product" button to add one product
@@ -213,10 +224,10 @@ When you have no products, you'll see a helpful message with instructions.
 
 **Features:**
 - Search categories by name
-- Grid of category cards
+- Scrollable list of category cards
 - Each card shows icon, name, product count, status
 - Edit button to modify category
-- Delete button to remove category (only if empty)
+- Delete button to remove category (only if not in use)
 - "New Category" button to add a category
 
 ---
@@ -226,9 +237,9 @@ When you have no products, you'll see a helpful message with instructions.
 ### Example 1: Setting Up From Scratch
 
 1. **Create Categories:**
-   - Salmon (order: 1)
-   - Cod (order: 2)
-   - Turbot (order: 3)
+   - Salmon (order: 1, enable VAC)
+   - Cod (order: 2, enable VAC)
+   - Turbot (order: 3, no VAC)
 
 2. **Add Salmon Products (Bulk):**
    - Select "Salmon" category
@@ -237,37 +248,33 @@ When you have no products, you'll see a helpful message with instructions.
 
 3. **Add Cod Products (Individual):**
    - Create each cod product manually
-   - Use auto-generate for names
+   - Select appropriate unit for each
 
 4. **Review & Edit:**
    - Check all products
    - Edit any that need adjustments
    - Set proper display orders
 
-### Example 2: Importing from Price List PDF
+### Example 2: Importing from a Simple List
 
-You have a price list PDF with products listed.
+You have a list of fish products:
 
 1. Create all your categories first
-2. Copy products from PDF (one category at a time)
+2. Copy products from your list (one category at a time)
 3. Use bulk import for each category
 4. Review imported products
-5. Edit any that didn't parse correctly
+5. Edit units if needed (default is "box")
 
-### Example 3: Adding New Product Variant
+### Example 3: Adding a New Product
 
-You want to add "Salmonfillet Trim A 2400/3000 SCALED PBI":
+You want to add "Mackerel Whole":
 
 1. Go to Products tab
 2. Click "New Product"
-3. Select "Salmon" category
-4. Base Name: "Salmon Fillet"
-5. Trim: "A"
-6. Size: "2400/3000"
-7. Skin: "SCALED"
-8. Packaging: "PBI"
-9. Click "Auto-Generate"
-10. Review and create
+3. Select appropriate category
+4. Name: "Mackerel Whole"
+5. Unit: "box" (or select custom unit)
+6. Click "Create Product"
 
 ---
 
@@ -277,11 +284,11 @@ Once you have products and categories set up:
 
 1. **Go to "Price List Management"**
 2. **Create a new price list**
-3. **All your products appear in the table**
+3. **All your active products appear in separate tables by category**
 4. **Add prices** for each product
 5. **Save and export to PDF**
 
-The price list automatically organizes products by category and displays them professionally.
+The price list automatically organizes products by category with visual separation between categories.
 
 ---
 
@@ -289,36 +296,28 @@ The price list automatically organizes products by category and displays them pr
 
 ### Naming Conventions
 
-**Be Consistent:**
-- Use the same format for all similar products
-- Example: Always use "1000/1400" not "1000-1400" or "1kg-1.4kg"
+**Be Clear and Consistent:**
+- Use simple, descriptive names
+- Example: "Salmon Fillet" not "Salmonfillet Trim A 1000/1400 SCALED PBI"
+- Keep it readable and easy to understand
 
-**Use Clear Abbreviations:**
-- PBI, PBO, SUP for packaging
-- SCALED, Skin On, Skinless for skin types
-- A, B, D, E for trim types
+**Product Name Examples:**
+- Salmon Fillet
+- Cod Whole
+- Tuna Steak
+- Shrimp (medium)
+- Lobster Tail
+- Sea Bass Fillet
 
 ### Display Orders
 
 **Lower Numbers First:**
 - Categories: 1, 2, 3, 4, 5...
-- Products: Arrange by popularity or size
+- Products: Arrange by popularity or preference
 
 **Keep Gaps:**
 - Use 10, 20, 30... instead of 1, 2, 3...
 - Makes it easier to insert items later
-
-### SKUs (Optional but Recommended)
-
-**Format Ideas:**
-- `SAL-A-1014` (Salmon, Trim A, 1000-1400)
-- `COD-SK-24` (Cod, Skin On, 2-4 kg)
-- `TUR-W-13` (Turbot, Wild, 1-3 kg)
-
-**Benefits:**
-- Easier to track in systems
-- Unique identifiers
-- Better for inventory management
 
 ### Categories
 
@@ -327,10 +326,43 @@ The price list automatically organizes products by category and displays them pr
 - Create them all before adding products
 - Easier to bulk import products when categories exist
 
+**VAC Pricing:**
+- Enable VAC pricing for categories where vacuum-sealed products are common
+- This adds an extra price column in price lists
+- Only enable when needed to keep price lists simple
+
 **Use Icons:**
 - Visual differentiation
 - Easier to scan
 - More professional appearance
+
+### Units of Measure
+
+**Create Units Before Products:**
+- Add all custom units you'll need first
+- Then assign them when creating products
+- Common units: box, kg, piece, tray, lb
+
+---
+
+## Safety Features
+
+### Deletion Protection
+
+**Products:**
+- Cannot delete products that are used in active, pending approval, or archived price lists
+- System will show which price lists contain the product
+- Remove from price lists first, or wait until price lists are drafts
+
+**Categories:**
+- Cannot delete categories whose products are used in active, pending approval, or archived price lists
+- System will show which price lists contain products from this category
+- Must remove products from price lists first
+
+**Error Messages:**
+You'll see clear messages like:
+- "Cannot delete product. It is used in price list 'PRICES ETA TUE/WED 12-11-2025' (active). Remove it from those price lists first."
+- "Cannot delete category. Products in this category are used in 2 price lists (active, pending approval). Remove them from those price lists first."
 
 ---
 
@@ -354,20 +386,21 @@ The price list automatically organizes products by category and displays them pr
 1. **Category not selected**
    - Solution: Select a category first
 
-2. **Empty lines or wrong format**
-   - Solution: Remove empty lines, use one of the supported formats
+2. **Empty input**
+   - Solution: Enter at least one product name
 
-3. **Parsing error**
-   - Solution: Click "Load Example" to see correct formats
+3. **All lines are empty**
+   - Solution: Remove blank lines, enter product names
 
-### Can't Delete Category
+### Can't Delete Product or Category
 
-**Cause:** Category has products assigned to it
+**Cause:** Product/category is in use in non-draft price lists
 
 **Solution:**
-1. Delete all products in that category first, OR
-2. Reassign products to another category (edit each product)
-3. Then delete the empty category
+1. Check the error message to see which price lists contain the product
+2. Go to those price lists and remove the product
+3. Wait until price lists are archived or in draft status
+4. Then delete the product/category
 
 ### Products Not Showing in Price List
 
@@ -385,12 +418,12 @@ The price list automatically organizes products by category and displays them pr
 ### Search
 
 **Products:**
-- Searches in: Name, Base Name, SKU
+- Searches in product name
 - Real-time filtering
 - Case-insensitive
 
 **Categories:**
-- Searches in: Name
+- Searches in category name
 - Real-time filtering
 
 ### Editing
@@ -398,6 +431,7 @@ The price list automatically organizes products by category and displays them pr
 **Products:**
 - Click pencil icon in the products table
 - All fields are editable
+- Can change category, name, unit, display order, and status
 - Changes save immediately
 
 **Categories:**
@@ -405,12 +439,14 @@ The price list automatically organizes products by category and displays them pr
 - All fields are editable
 - Changes save immediately
 
-### Deleting
+### Two-Column Layout
 
-**Safety Features:**
-- Confirmation dialog for all deletions
-- Cannot delete categories with products
-- Clear warning messages
+**Products View:**
+- Products are displayed in two columns
+- Even-indexed categories in left column
+- Odd-indexed categories in right column
+- Better use of screen space
+- Easier to compare categories
 
 ---
 
@@ -422,21 +458,28 @@ After setting up products and categories:
    - Go to "Price List Management"
    - Create a new price list
    - Add prices for your products
-   - Save and export to PDF
+   - Submit for approval or save as draft
 
 2. **Manage Orders**
-   - Go to "Incoming Orders" (coming soon)
+   - Go to "Incoming Orders"
    - View orders from customers
+   - Update order status
    - Process orders based on your price lists
 
 3. **Update Products**
    - Regularly review your product catalog
    - Add new products as inventory changes
-   - Deactivate discontinued products
+   - Deactivate discontinued products (don't delete if in use)
 
 ---
 
 ## Summary
+
+✅ **Simplified Product Model**
+- Focus on core data only
+- Simple product names
+- Easy to understand and manage
+- No complex attributes
 
 ✅ **Full CRUD Operations**
 - Create categories and products
@@ -447,30 +490,34 @@ After setting up products and categories:
 ✅ **Multiple Input Methods**
 - Manual one-by-one creation
 - Bulk import with preview
-- Auto-generate names
+- Simple text format (one per line)
 
 ✅ **User-Friendly Interface**
 - Tabbed navigation
+- Two-column layout for products
 - Search functionality
 - Clear feedback messages
 - Loading states
 
 ✅ **Safety Features**
 - Confirmation dialogs
-- Cannot delete categories with products
+- Cannot delete products/categories in use
+- Detailed error messages showing which price lists contain products
 - Input validation
 - Error handling
 
 ✅ **Professional Features**
 - Icons for categories
 - Display order control
-- SKU support
+- Custom units of measure
+- VAC pricing control per category
 - Active/inactive status
+- Category-based grouping
 
 The Product Management System is production-ready and fully integrated with the Price List System!
 
 ---
 
-**Last Updated:** November 10, 2025
-**Version:** 1.0.0
+**Last Updated:** November 14, 2025
+**Version:** 2.0.0 (Simplified Product Model)
 **Status:** ✅ 100% Functional

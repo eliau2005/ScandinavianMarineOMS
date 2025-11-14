@@ -580,6 +580,57 @@ export const priceListService = {
   },
 
   /**
+   * Check if products are being used in non-draft price lists
+   * Returns an error if products are in use, otherwise returns null
+   */
+  async checkProductsInUse(productIds: string[]): Promise<{
+    inUse: boolean;
+    priceListNames: string[];
+    statuses: string[];
+  }> {
+    try {
+      if (productIds.length === 0) {
+        return { inUse: false, priceListNames: [], statuses: [] };
+      }
+
+      // Get all non-draft price lists (active, pending_approval, archived)
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PRICE_LISTS,
+        [
+          Query.notEqual("status", "draft"),
+          Query.limit(1000)
+        ]
+      );
+
+      const nonDraftPriceLists = response.documents as PriceList[];
+      const foundInPriceLists: { name: string; status: string }[] = [];
+
+      // Check each non-draft price list for the products
+      for (const priceList of nonDraftPriceLists) {
+        const items = await priceListItemService.getByPriceList(priceList.$id!);
+        const hasProduct = items.some((item) => productIds.includes(item.product_id));
+
+        if (hasProduct) {
+          foundInPriceLists.push({
+            name: priceList.name,
+            status: priceList.status,
+          });
+        }
+      }
+
+      return {
+        inUse: foundInPriceLists.length > 0,
+        priceListNames: foundInPriceLists.map((pl) => pl.name),
+        statuses: foundInPriceLists.map((pl) => pl.status),
+      };
+    } catch (error) {
+      console.error("Error checking products in use:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Duplicate a price list
    */
   async duplicate(

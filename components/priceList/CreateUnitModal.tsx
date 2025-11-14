@@ -10,6 +10,7 @@ interface CreateUnitModalProps {
     id: string;
     name: string;
   };
+  editUnit?: UnitOfMeasure;
 }
 
 const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
@@ -17,13 +18,29 @@ const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
   onClose,
   onSubmit,
   supplierInfo,
+  editUnit,
 }) => {
   const [formData, setFormData] = useState({
-    unit_name: "",
-    display_order: 0,
+    unit_name: editUnit?.unit_name || "",
+    display_order: editUnit?.display_order || 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update form when editUnit changes
+  React.useEffect(() => {
+    if (editUnit) {
+      setFormData({
+        unit_name: editUnit.unit_name,
+        display_order: editUnit.display_order,
+      });
+    } else {
+      setFormData({
+        unit_name: "",
+        display_order: 0,
+      });
+    }
+  }, [editUnit, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +87,11 @@ const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Unit of Measure">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={editUnit ? "Edit Unit of Measure" : "Add Unit of Measure"}
+    >
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <div className="space-y-4 flex-1 overflow-y-auto">
           {error && (
@@ -137,7 +158,15 @@ const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
                 progress_activity
               </span>
             )}
-            <span>{loading ? "Adding..." : "Add Unit"}</span>
+            <span>
+              {loading
+                ? editUnit
+                  ? "Updating..."
+                  : "Adding..."
+                : editUnit
+                ? "Update Unit"
+                : "Add Unit"}
+            </span>
           </button>
         </div>
       </form>

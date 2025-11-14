@@ -98,18 +98,15 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
     }
   };
 
-  const exampleFormats = `Simple format (one product per line):
-Salmonfillet Trim A 1000/1400 SCALED PBI
-Salmonfillet Trim A 1400/1800 SCALED PBI
-Cod Fillet Skin On 200/400 GR
-
-Detailed format (using | separator):
-Salmonfillet Trim A 1000/1400 SCALED PBI | A | 1000/1400 | SCALED | PBI
-Salmon HOG 2-3 SUP | | 2-3 | | SUP | SAL-HOG-23
-
-CSV format (using commas):
-Salmonfillet Trim A,A,1000/1400,SCALED,PBI,SAL-A-1014
-Doversoles 2/300 GR,,,,,DOV-2-300`;
+  const exampleFormats = `One product name per line:
+Salmon Fillet
+Cod Fillet
+Tuna Steak
+Shrimp
+Lobster Tail
+Crab Meat
+Halibut Fillet
+Sea Bass Whole`;
 
   return (
     <Modal
@@ -169,8 +166,7 @@ Doversoles 2/300 GR,,,,,DOV-2-300`;
             disabled={loading}
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Formats: "Product Name" or "Name | Trim | Size | Skin | Packaging |
-            SKU"
+            Enter one product name per line. Each product will be added to the selected category.
           </p>
         </div>
 
@@ -215,7 +211,7 @@ Doversoles 2/300 GR,,,,,DOV-2-300`;
         {/* Format Help */}
         <details className="text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded p-3">
           <summary className="cursor-pointer font-medium">
-            Supported Formats
+            Format Example
           </summary>
           <pre className="mt-2 whitespace-pre-wrap font-mono bg-gray-100 dark:bg-gray-900 p-2 rounded">
             {exampleFormats}
