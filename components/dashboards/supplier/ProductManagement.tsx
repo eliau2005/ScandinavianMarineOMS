@@ -12,16 +12,14 @@ import CreateCategoryModal from "../../priceList/CreateCategoryModal";
 import CreateUnitModal from "../../priceList/CreateUnitModal";
 import BulkImportModal from "../../priceList/BulkImportModal";
 import ConfirmationDialog from "../../common/ConfirmationDialog";
+import Modal from "../../common/Modal";
 
 interface Notification {
   type: "success" | "error" | "info";
   message: string;
 }
 
-type Tab = "products" | "categories" | "units";
-
 const ProductManagement = () => {
-  const [activeTab, setActiveTab] = useState<Tab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
@@ -30,7 +28,9 @@ const ProductManagement = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showUnitModal, setShowUnitModal] = useState(false);
+  const [showManageUnitsModal, setShowManageUnitsModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [isManaging, setIsManaging] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [editingCategory, setEditingCategory] = useState<ProductCategory | undefined>();
   const [editingUnit, setEditingUnit] = useState<UnitOfMeasure | undefined>();
@@ -387,10 +387,6 @@ const ProductManagement = () => {
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredCategories = categories.filter((category) =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const filteredUnits = units.filter((unit) =>
     unit.unit_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -410,33 +406,6 @@ const ProductManagement = () => {
 
     return (
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Products ({filteredProducts.length})
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowBulkImportModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <span className="material-symbols-outlined text-base">upload</span>
-              <span>Bulk Import</span>
-            </button>
-            <button
-              onClick={() => {
-                setEditingProduct(undefined);
-                setShowProductModal(true);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-supplier-accent text-white rounded-lg text-xs font-medium hover:bg-opacity-90 transition-colors"
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              <span>New Product</span>
-            </button>
-          </div>
-        </div>
 
         {/* Master-Detail Layout */}
         {loading ? (
@@ -477,43 +446,80 @@ const ProductManagement = () => {
                   const isSelected = selectedCategoryId === category.$id;
 
                   return (
-                    <button
+                    <div
                       key={category.$id}
-                      onClick={() => setSelectedCategoryId(category.$id!)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-colors ${
+                      className={`border-b border-gray-100 dark:border-gray-700 transition-colors ${
                         isSelected
                           ? "bg-supplier-accent/10 dark:bg-supplier-accent/20 border-l-4 border-l-supplier-accent"
                           : "hover:bg-gray-50 dark:hover:bg-gray-700"
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        {category.icon && (
-                          <span
-                            className={`material-symbols-outlined text-lg ${
-                              isSelected
-                                ? "text-supplier-accent"
-                                : "text-gray-500 dark:text-gray-400"
-                            }`}
-                          >
-                            {category.icon}
-                          </span>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm font-medium truncate ${
-                              isSelected
-                                ? "text-gray-900 dark:text-gray-100"
-                                : "text-gray-700 dark:text-gray-300"
-                            }`}
-                          >
-                            {category.name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {productCount} {productCount === 1 ? "product" : "products"}
-                          </p>
+                      <div
+                        onClick={() => setSelectedCategoryId(category.$id!)}
+                        className="w-full text-left px-4 py-3 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          {category.icon && (
+                            <span
+                              className={`material-symbols-outlined text-lg ${
+                                isSelected
+                                  ? "text-supplier-accent"
+                                  : "text-gray-500 dark:text-gray-400"
+                              }`}
+                            >
+                              {category.icon}
+                            </span>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm font-medium truncate ${
+                                isSelected
+                                  ? "text-gray-900 dark:text-gray-100"
+                                  : "text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {category.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {productCount} {productCount === 1 ? "product" : "products"}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </button>
+                      {isManaging && (
+                        <div className="flex items-center justify-end gap-1 px-2 pb-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCategory(category);
+                            }}
+                            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                            title="Edit"
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              edit
+                            </span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm({
+                                type: "category",
+                                id: category.$id!,
+                                name: category.name,
+                                productCount: productCount,
+                              });
+                            }}
+                            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            title="Delete"
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              delete
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -559,10 +565,10 @@ const ProductManagement = () => {
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                               Product Name
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                               Unit
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                               Status
                             </th>
                             <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
@@ -582,22 +588,26 @@ const ProductManagement = () => {
                                 </p>
                               </td>
                               <td className="px-4 py-3">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                  {product.unit_of_measure}
-                                </span>
+                                <div className="flex justify-end">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                    {product.unit_of_measure}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-4 py-3">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    product.is_active
-                                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                  }`}
-                                >
-                                  {product.is_active ? "Active" : "Inactive"}
-                                </span>
+                                <div className="flex justify-end">
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      product.is_active
+                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                    }`}
+                                  >
+                                    {product.is_active ? "Active" : "Inactive"}
+                                  </span>
+                                </div>
                               </td>
-                              <td className="px-4 py-3 text-right">
+                              <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-2">
                                   <button
                                     onClick={() => handleEditProduct(product)}
@@ -649,252 +659,6 @@ const ProductManagement = () => {
     );
   };
 
-  const renderCategories = () => (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Categories ({filteredCategories.length})
-          </h3>
-        </div>
-        <button
-          onClick={() => {
-            setEditingCategory(undefined);
-            setShowCategoryModal(true);
-          }}
-          className="flex items-center gap-2 px-3 py-1.5 bg-supplier-accent text-white rounded-lg text-xs font-medium hover:bg-opacity-90 transition-colors"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          <span>New Category</span>
-        </button>
-      </div>
-
-      {/* Categories Grid */}
-      {loading ? (
-        <div className="flex items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-supplier-accent"></div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Loading categories...
-            </p>
-          </div>
-        </div>
-      ) : filteredCategories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-            category
-          </span>
-          <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-            {searchTerm ? "No categories found" : "No categories yet"}
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            {searchTerm
-              ? "Try a different search term"
-              : "Create your first category to organize products"}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 max-h-[70vh] overflow-y-auto p-1">
-          {filteredCategories.map((category) => {
-            const productCount = products.filter(
-              (p) => p.category_id === category.$id
-            ).length;
-
-            return (
-              <div
-                key={category.$id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {category.icon && (
-                      <span className="material-symbols-outlined text-2xl text-supplier-accent">
-                        {category.icon}
-                      </span>
-                    )}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                          {category.name}
-                        </h4>
-                        {category.enable_vac_pricing && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            VAC
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {productCount} product{productCount !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      category.is_active
-                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                    }`}
-                  >
-                    {category.is_active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-end pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleEditCategory(category)}
-                      className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
-                      title="Edit"
-                    >
-                      <span className="material-symbols-outlined text-base">
-                        edit
-                      </span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        setDeleteConfirm({
-                          type: "category",
-                          id: category.$id!,
-                          name: category.name,
-                          productCount: productCount,
-                        })
-                      }
-                      className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                      title="Delete"
-                    >
-                      <span className="material-symbols-outlined text-base">
-                        delete
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderUnits = () => (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Units of Measure ({filteredUnits.length})
-          </h3>
-        </div>
-        <button
-          onClick={() => {
-            setEditingUnit(undefined);
-            setShowUnitModal(true);
-          }}
-          className="flex items-center gap-2 px-3 py-1.5 bg-supplier-accent text-white rounded-lg text-xs font-medium hover:bg-opacity-90 transition-colors"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          <span>New Unit</span>
-        </button>
-      </div>
-
-      {/* Units List */}
-      {loading ? (
-        <div className="flex items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-supplier-accent"></div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Loading units...
-            </p>
-          </div>
-        </div>
-      ) : filteredUnits.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-            straighten
-          </span>
-          <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-            {searchTerm ? "No units found" : "No units yet"}
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            {searchTerm
-              ? "Try a different search term"
-              : "Create your first unit of measure"}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 max-h-[70vh] overflow-y-auto p-1">
-          {filteredUnits.map((unit) => {
-            const productCount = products.filter(
-              (p) => p.unit_of_measure === unit.unit_name
-            ).length;
-
-            return (
-              <div
-                key={unit.$id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-2xl text-supplier-accent">
-                      straighten
-                    </span>
-                    <div>
-                      <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                        {unit.unit_name}
-                      </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {productCount} product{productCount !== 1 ? "s" : ""}
-                        {unit.is_default && " • Default"}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      unit.is_active
-                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                    }`}
-                  >
-                    {unit.is_active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-end pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleEditUnit(unit)}
-                      className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
-                      title="Edit"
-                    >
-                      <span className="material-symbols-outlined text-base">
-                        edit
-                      </span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        setDeleteConfirm({
-                          type: "unit",
-                          id: unit.$id!,
-                          name: unit.unit_name,
-                        })
-                      }
-                      className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                      title="Delete"
-                    >
-                      <span className="material-symbols-outlined text-base">
-                        delete
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -915,41 +679,12 @@ const ProductManagement = () => {
         </div>
       )}
 
-      {/* Fixed Header: Tabs & Search */}
+      {/* Fixed Header: Title & Actions */}
       <div className="flex-shrink-0 px-6 pt-6 pb-4 bg-background-light dark:bg-background-dark">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setActiveTab("products")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === "products"
-                  ? "bg-supplier-accent text-white"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              Products ({products.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("categories")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === "categories"
-                  ? "bg-supplier-accent text-white"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              Categories ({categories.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("units")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === "units"
-                  ? "bg-supplier-accent text-white"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              Units ({units.length})
-            </button>
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+            Product Management
+          </h2>
 
           {/* Search */}
           <div className="relative">
@@ -960,20 +695,67 @@ const ProductManagement = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={`Search ${activeTab}...`}
+              placeholder="Search products..."
               className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent w-64"
             />
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBulkImportModal(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">upload</span>
+            <span>Bulk Import</span>
+          </button>
+          <button
+            onClick={() => {
+              setEditingProduct(undefined);
+              setShowProductModal(true);
+            }}
+            className="flex items-center gap-2 px-3 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            <span>New Product</span>
+          </button>
+          <button
+            onClick={() => {
+              setEditingCategory(undefined);
+              setShowCategoryModal(true);
+            }}
+            className="flex items-center gap-2 px-3 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            <span>New Category</span>
+          </button>
+          <button
+            onClick={() => setShowManageUnitsModal(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">straighten</span>
+            <span>Manage Units</span>
+          </button>
+          <button
+            onClick={() => setIsManaging(!isManaging)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isManaging
+                ? "bg-supplier-accent text-white hover:bg-opacity-90"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">
+              {isManaging ? "check" : "edit"}
+            </span>
+            <span>{isManaging ? "Done Managing" : "Manage Lists"}</span>
+          </button>
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-6 pb-6">
-        {activeTab === "products"
-          ? renderProducts()
-          : activeTab === "categories"
-          ? renderCategories()
-          : renderUnits()}
+        {renderProducts()}
       </div>
 
 
@@ -1023,6 +805,128 @@ const ProductManagement = () => {
         onSubmit={handleBulkImport}
         categories={categories}
       />
+
+      {/* Manage Units Modal */}
+      <Modal
+        isOpen={showManageUnitsModal}
+        onClose={() => setShowManageUnitsModal(false)}
+        title="Manage Units of Measure"
+      >
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total: {filteredUnits.length} unit{filteredUnits.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingUnit(undefined);
+                setShowUnitModal(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-supplier-accent text-white rounded-lg text-xs font-medium hover:bg-opacity-90 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+              <span>New Unit</span>
+            </button>
+          </div>
+
+          {/* Units List */}
+          {loading ? (
+            <div className="flex items-center justify-center p-12">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-supplier-accent"></div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Loading units...
+                </p>
+              </div>
+            </div>
+          ) : filteredUnits.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12">
+              <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
+                straighten
+              </span>
+              <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+                No units yet
+              </p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+                Create your first unit of measure
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
+              {filteredUnits.map((unit) => {
+                const productCount = products.filter(
+                  (p) => p.unit_of_measure === unit.unit_name
+                ).length;
+
+                return (
+                  <div
+                    key={unit.$id}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-2xl text-supplier-accent">
+                          straighten
+                        </span>
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                            {unit.unit_name}
+                          </h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {productCount} product{productCount !== 1 ? "s" : ""}
+                            {unit.is_default && " • Default"}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          unit.is_active
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {unit.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-end pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEditUnit(unit)}
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-supplier-accent dark:hover:text-supplier-accent transition-colors"
+                          title="Edit"
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            edit
+                          </span>
+                        </button>
+                        <button
+                          onClick={() =>
+                            setDeleteConfirm({
+                              type: "unit",
+                              id: unit.$id!,
+                              name: unit.unit_name,
+                            })
+                          }
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            delete
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Delete Confirmation */}
       <ConfirmationDialog
