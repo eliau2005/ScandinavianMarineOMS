@@ -263,15 +263,16 @@ const ProductManagement = () => {
 
   const handleDeleteUnit = async (id: string) => {
     try {
-      // Check if any products use this unit
-      const productsUsingUnit = products.filter(
-        (p) => p.unit_of_measure === units.find((u) => u.$id === id)?.unit_name
+      // Check if any categories use this unit
+      const unitName = units.find((u) => u.$id === id)?.unit_name;
+      const categoriesUsingUnit = categories.filter(
+        (c) => c.unit_of_measure === unitName
       );
 
-      if (productsUsingUnit.length > 0) {
+      if (categoriesUsingUnit.length > 0) {
         showNotification(
           "error",
-          `Cannot delete unit. It is used by ${productsUsingUnit.length} product${productsUsingUnit.length !== 1 ? "s" : ""}. Change the unit for those products first.`
+          `Cannot delete unit. It is used by ${categoriesUsingUnit.length} categor${categoriesUsingUnit.length !== 1 ? "ies" : "y"}. Change the unit for those categories first.`
         );
         setDeleteConfirm(null);
         return;
@@ -590,7 +591,7 @@ const ProductManagement = () => {
                               <td className="px-4 py-3">
                                 <div className="flex justify-end">
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                    {product.unit_of_measure}
+                                    {selectedCategory?.unit_of_measure || "N/A"}
                                   </span>
                                 </div>
                               </td>
@@ -783,6 +784,10 @@ const ProductManagement = () => {
           editingCategory ? handleUpdateCategory : handleCreateCategory
         }
         editCategory={editingCategory}
+        supplierInfo={{
+          id: currentUser?.id || "",
+          name: currentUser?.name || "Supplier",
+        }}
       />
 
       <CreateUnitModal
@@ -857,8 +862,8 @@ const ProductManagement = () => {
           ) : (
             <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
               {filteredUnits.map((unit) => {
-                const productCount = products.filter(
-                  (p) => p.unit_of_measure === unit.unit_name
+                const categoryCount = categories.filter(
+                  (c) => c.unit_of_measure === unit.unit_name
                 ).length;
 
                 return (
@@ -876,7 +881,7 @@ const ProductManagement = () => {
                             {unit.unit_name}
                           </h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {productCount} product{productCount !== 1 ? "s" : ""}
+                            {categoryCount} categor{categoryCount !== 1 ? "ies" : "y"}
                             {unit.is_default && " • Default"}
                           </p>
                         </div>

@@ -1,12 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "../common/Modal";
-import type { ProductCategory } from "../../types/priceList";
+import CreateUnitModal from "./CreateUnitModal";
+import type { ProductCategory, UnitOfMeasure } from "../../types/priceList";
+import { unitOfMeasureService } from "../../lib/unitOfMeasureService";
 
 interface CreateCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Omit<ProductCategory, "$id">) => Promise<void>;
   editCategory?: ProductCategory;
+  supplierInfo: {
+    id: string;
+    name: string;
+  };
 }
 
 const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
@@ -14,30 +20,61 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
   onClose,
   onSubmit,
   editCategory,
+  supplierInfo,
 }) => {
   const [formData, setFormData] = useState({
     name: editCategory?.name || "",
-    display_order: editCategory?.display_order || 0,
-    icon: editCategory?.icon || "",
+    unit_of_measure: editCategory?.unit_of_measure || "",
     description: editCategory?.description || "",
     is_active: editCategory?.is_active ?? true,
     enable_vac_pricing: editCategory?.enable_vac_pricing || false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [units, setUnits] = useState<UnitOfMeasure[]>([]);
+  const [loadingUnits, setLoadingUnits] = useState(false);
+  const [showUnitModal, setShowUnitModal] = useState(false);
 
-  React.useEffect(() => {
+  // Load units when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadUnits();
+    }
+  }, [isOpen, supplierInfo.id]);
+
+  // Update form when editCategory changes
+  useEffect(() => {
     if (editCategory) {
       setFormData({
         name: editCategory.name,
-        display_order: editCategory.display_order,
-        icon: editCategory.icon || "",
+        unit_of_measure: editCategory.unit_of_measure || "",
         description: editCategory.description || "",
         is_active: editCategory.is_active,
         enable_vac_pricing: editCategory.enable_vac_pricing || false,
       });
     }
   }, [editCategory]);
+
+  const loadUnits = async () => {
+    setLoadingUnits(true);
+    try {
+      const fetchedUnits = await unitOfMeasureService.getBySupplier(supplierInfo.id);
+      setUnits(fetchedUnits);
+      // If no unit is selected and we have units, select the first one
+      if (!formData.unit_of_measure && fetchedUnits.length > 0) {
+        setFormData(prev => ({ ...prev, unit_of_measure: fetchedUnits[0].unit_name }));
+      }
+    } catch (err) {
+      console.error("Failed to load units:", err);
+    } finally {
+      setLoadingUnits(false);
+    }
+  };
+
+  const handleCreateUnit = async (data: Omit<UnitOfMeasure, "$id">) => {
+    await unitOfMeasureService.create(data);
+    await loadUnits(); // Refresh the units list
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,22 +85,26 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
       return;
     }
 
+    if (!formData.unit_of_measure.trim()) {
+      setError("Unit of measure is required");
+      return;
+    }
+
     setLoading(true);
     try {
       await onSubmit({
         name: formData.name.trim(),
-        display_order: formData.display_order,
-        icon: formData.icon.trim() || undefined,
+        unit_of_measure: formData.unit_of_measure.trim(),
         description: formData.description.trim() || undefined,
         is_active: formData.is_active,
         enable_vac_pricing: formData.enable_vac_pricing,
+        display_order: 0, // Default value
       });
 
       // Reset form
       setFormData({
         name: "",
-        display_order: 0,
-        icon: "",
+        unit_of_measure: units.length > 0 ? units[0].unit_name : "",
         description: "",
         is_active: true,
         enable_vac_pricing: false,
@@ -80,8 +121,7 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
     if (!loading) {
       setFormData({
         name: "",
-        display_order: 0,
-        icon: "",
+        unit_of_measure: units.length > 0 ? units[0].unit_name : "",
         description: "",
         is_active: true,
         enable_vac_pricing: false,
@@ -90,11 +130,6 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
       onClose();
     }
   };
-
-  const iconSuggestions = [
-    "set_meal", "phishing", "water_drop", "restaurant",
-    "local_dining", "lunch_dining", "ramen_dining"
-  ];
 
   return (
     <Modal
@@ -125,56 +160,46 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
           />
         </div>
 
-        {/* Display Order */}
+        {/* Unit of Measure */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Display Order
-          </label>
-          <input
-            type="number"
-            value={formData.display_order}
-            onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-            disabled={loading}
-            min="0"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Lower numbers appear first
-          </p>
-        </div>
-
-        {/* Icon */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Icon (Material Symbol)
-          </label>
-          <input
-            type="text"
-            value={formData.icon}
-            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-            placeholder="e.g., set_meal, phishing"
-            disabled={loading}
-          />
-          <div className="flex gap-2 mt-2 flex-wrap">
-            {iconSuggestions.map((icon) => (
-              <button
-                key={icon}
-                type="button"
-                onClick={() => setFormData({ ...formData, icon })}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <span className="material-symbols-outlined text-sm">{icon}</span>
-                <span>{icon}</span>
-              </button>
-            ))}
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Unit of Measure <span className="text-red-500">*</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowUnitModal(true)}
+              className="text-xs font-medium text-supplier-accent hover:text-opacity-80 transition-colors flex items-center gap-1"
+              disabled={loading}
+            >
+              <span className="material-symbols-outlined text-sm">add_circle</span>
+              Manage Units
+            </button>
           </div>
-          {formData.icon && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <span>Preview:</span>
-              <span className="material-symbols-outlined text-2xl">{formData.icon}</span>
-            </div>
-          )}
+          <select
+            value={formData.unit_of_measure}
+            onChange={(e) => setFormData({ ...formData, unit_of_measure: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
+            disabled={loading || loadingUnits}
+          >
+            {loadingUnits ? (
+              <option>Loading units...</option>
+            ) : units.length === 0 ? (
+              <option value="">No units available - Click "Manage Units" to add one</option>
+            ) : (
+              <>
+                <option value="">Select a unit</option>
+                {units.map((unit) => (
+                  <option key={unit.$id} value={unit.unit_name}>
+                    {unit.unit_name}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            All products in this category will use this unit
+          </p>
         </div>
 
         {/* Description */}
@@ -247,6 +272,14 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Unit Management Modal */}
+      <CreateUnitModal
+        isOpen={showUnitModal}
+        onClose={() => setShowUnitModal(false)}
+        onSubmit={handleCreateUnit}
+        supplierInfo={supplierInfo}
+      />
     </Modal>
   );
 };

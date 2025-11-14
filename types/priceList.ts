@@ -26,6 +26,7 @@ export const ProductCategorySchema = z.object({
   $id: z.string().optional(),
   name: z.string().min(1, "Category name is required").max(255),
   enable_vac_pricing: z.boolean().default(false), // Controls VAC pricing columns for this category
+  unit_of_measure: z.string().min(1, "Unit of measure is required").max(50),
   display_order: z.number().int().min(0).default(0),
   icon: z.string().max(100).optional(),
   description: z.string().max(500).optional(),
@@ -39,7 +40,6 @@ export const ProductSchema = z.object({
   $id: z.string().optional(),
   category_id: z.string().min(1, "Category is required"),
   name: z.string().min(1, "Product name is required").max(255), // Fish name only
-  unit_of_measure: z.string().min(1, "Unit of measure is required").max(50).default("box"), // Custom units
   display_order: z.number().int().min(0).default(0),
   is_active: z.boolean().default(true),
   $createdAt: z.string().optional(),
