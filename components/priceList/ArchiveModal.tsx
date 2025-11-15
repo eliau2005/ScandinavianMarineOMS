@@ -76,7 +76,6 @@ const ArchiveModal: React.FC<ArchiveModalProps> = ({
           product,
           category: categoryMap.get(product.category_id)!,
           price_box: item?.price_box || null,
-          vac_surcharge_per_kg: item?.vac_surcharge_per_kg || null,
           is_available: item?.is_available ?? true,
           item_id: item?.$id,
         };

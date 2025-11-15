@@ -43,6 +43,7 @@ export const OrderItemSchema = z.object({
   quantity_regular: z.number().min(0).default(0), // Quantity for regular packaging
   quantity_vac: z.number().min(0).default(0), // Quantity for VAC packaging
   unit_price: z.number().min(0), // Regular packaging price (per unit)
+  vac_surcharge_at_order: z.number().optional().nullable(), // VAC surcharge per kg at time of order (snapshot for historical accuracy)
   total: z.number().min(0), // Total for regular packaging only (VAC calculated by supplier)
   notes: z.string().optional(),
 });

@@ -5,6 +5,7 @@ import { account } from "../../../lib/appwrite";
 import { associationService, orderService } from "../../../lib/orderService";
 import { priceListService } from "../../../lib/priceListService";
 import type { PriceListWithItems, PriceListTableRow } from "../../../types/priceList";
+import { getCategoryVacSurcharge } from "../../../types/priceList";
 import type { CartItem, OrderItem } from "../../../types/order";
 import { generateOrderNumber } from "../../../types/order";
 import { createNotification } from "../../../lib/notificationService";
@@ -89,7 +90,6 @@ const PlaceOrder = () => {
         product: item.product!,
         category: item.product?.category!,
         price_box: item.price_box,
-        vac_surcharge_per_kg: item.vac_surcharge_per_kg,
         is_available: item.is_available,
         item_id: item.$id,
       })) || [];
@@ -176,12 +176,15 @@ const PlaceOrder = () => {
         // Find the product to get category information
         let categoryId: string | undefined;
         let categoryName: string | undefined;
+        let vacSurcharge: number | null = null;
 
         for (const [catName, products] of productsMap.entries()) {
           const product = products.find(p => p.product.$id === item.product_id);
           if (product) {
             categoryId = product.category.$id;
             categoryName = product.category.name;
+            // Get VAC surcharge from price list, not category
+            vacSurcharge = getCategoryVacSurcharge(selectedSupplierPriceList.priceList, categoryId!);
             break;
           }
         }
@@ -196,6 +199,7 @@ const PlaceOrder = () => {
           quantity_regular: item.quantity_regular,
           quantity_vac: item.quantity_vac,
           unit_price: item.unit_price,
+          vac_surcharge_at_order: vacSurcharge,
           total: regularTotal,
         };
       });
@@ -261,6 +265,9 @@ const PlaceOrder = () => {
   // Check if current category has VAC pricing enabled
   const currentCategoryHasVac = currentProducts.length > 0 && currentProducts[0].category?.enable_vac_pricing;
   const currentCategoryUnit = currentProducts.length > 0 ? currentProducts[0].category?.unit_of_measure || "Box" : "Box";
+  const currentCategoryVacSurcharge = currentProducts.length > 0 && selectedSupplierPriceList
+    ? getCategoryVacSurcharge(selectedSupplierPriceList.priceList, currentProducts[0].category.$id!)
+    : null;
 
   // Group cart items by category for summary modal
   const groupedCartItems = Array.from(cart.values()).reduce((acc, item) => {
@@ -463,7 +470,9 @@ const PlaceOrder = () => {
                     </th>
                     {currentCategoryHasVac && (
                       <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        {currentCategoryUnit} (VAC)
+                        {currentCategoryVacSurcharge
+                          ? `${currentCategoryUnit} (VAC +€${currentCategoryVacSurcharge.toFixed(2)}/kg)`
+                          : `${currentCategoryUnit} (VAC)`}
                       </th>
                     )}
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -514,9 +523,9 @@ const PlaceOrder = () => {
                               <p className="font-semibold text-gray-800 dark:text-gray-200">
                                 € {product.price_box?.toFixed(2)}
                               </p>
-                              {product.vac_surcharge_per_kg && product.vac_surcharge_per_kg > 0 && (
+                              {currentCategoryVacSurcharge && currentCategoryVacSurcharge > 0 && (
                                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                                  +€{product.vac_surcharge_per_kg.toFixed(2)}/kg
+                                  +€{currentCategoryVacSurcharge.toFixed(2)}/kg
                                 </p>
                               )}
                             </div>

@@ -7,7 +7,7 @@ interface PriceListProductTableProps {
   products: PriceListTableRow[];
   onPriceChange: (
     productId: string,
-    field: "price_box" | "vac_surcharge_per_kg",
+    field: "price_box",
     value: number
   ) => void;
   editable: boolean;
@@ -23,6 +23,7 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
   // Check if this category has VAC pricing enabled
   const hasVacPricing = products.length > 0 && products[0].category?.enable_vac_pricing;
   const unitOfMeasure = products.length > 0 ? products[0].category?.unit_of_measure || "Box" : "Box";
+  const vacSurcharge = products.length > 0 ? products[0].category?.vac_surcharge_per_kg : null;
 
   return (
     <>
@@ -65,13 +66,10 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
                   Unit
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                  Price/{unitOfMeasure}
+                  {hasVacPricing && vacSurcharge
+                    ? `${unitOfMeasure} (VAC +€${vacSurcharge.toFixed(2)}/kg)`
+                    : `Price/${unitOfMeasure}`}
                 </th>
-                {hasVacPricing && (
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    {unitOfMeasure} (VAC +€/kg)
-                  </th>
-                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -117,33 +115,6 @@ const PriceListProductTable: React.FC<PriceListProductTableProps> = ({
                       )}
                     </div>
                   </td>
-                  {hasVacPricing && (
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end">
-                        {editable ? (
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={row.vac_surcharge_per_kg || ""}
-                            onChange={(e) =>
-                              onPriceChange(
-                                row.product.$id!,
-                                "vac_surcharge_per_kg",
-                                parseFloat(e.target.value)
-                              )
-                            }
-                            className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-right focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-                            placeholder="0.00"
-                          />
-                        ) : (
-                          <span className="text-gray-800 dark:text-gray-200">
-                            {row.vac_surcharge_per_kg !== null && row.vac_surcharge_per_kg > 0 ? `+€${row.vac_surcharge_per_kg.toFixed(2)}/kg` : "-"}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>

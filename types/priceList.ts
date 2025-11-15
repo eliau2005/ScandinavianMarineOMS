@@ -25,7 +25,7 @@ export const Currency = {
 export const ProductCategorySchema = z.object({
   $id: z.string().optional(),
   name: z.string().min(1, "Category name is required").max(255),
-  enable_vac_pricing: z.boolean().default(false), // Controls VAC pricing columns for this category
+  enable_vac_pricing: z.boolean().default(false), // Controls whether VAC pricing is available for this category
   unit_of_measure: z.string().min(1, "Unit of measure is required").max(50),
   display_order: z.number().int().min(0).default(0),
   icon: z.string().max(100).optional(),
@@ -68,6 +68,7 @@ export const PriceListSchema = z.object({
   effective_date: z.string().min(1, "Start date is required"), // ISO date string (delivery start)
   expiry_date: z.string().min(1, "End date is required"), // ISO date string (delivery end) - REQUIRED
   status: z.enum(["draft", "pending_approval", "active", "archived"]).default("draft"),
+  category_vac_surcharges: z.string().optional().nullable(), // JSON string: {"category_id": surcharge_per_kg}
   notes: z.string().max(1000).optional().nullable(),
   is_default: z.boolean().default(false),
   created_by: z.string().min(1, "Creator ID is required"),
@@ -81,7 +82,6 @@ export const PriceListItemSchema = z.object({
   price_list_id: z.string().min(1, "Price list ID is required"),
   product_id: z.string().min(1, "Product ID is required"),
   price_box: z.number().min(0, "Price must be positive"),
-  vac_surcharge_per_kg: z.number().min(0).optional().nullable(),
   currency: z.enum(["EUR", "USD", "GBP"]).default("EUR"),
   min_quantity: z.number().int().min(0).optional().nullable(),
   max_quantity: z.number().int().min(0).optional().nullable(),
@@ -146,7 +146,6 @@ export const BulkPriceUpdateSchema = z.object({
     z.object({
       product_id: z.string().min(1),
       price_box: z.number().min(0),
-      vac_surcharge_per_kg: z.number().min(0).optional().nullable(),
     })
   ),
 });
@@ -173,7 +172,6 @@ export interface PriceListTableRow {
   product: Product;
   category: ProductCategory;
   price_box: number | null;
-  vac_surcharge_per_kg: number | null;
   is_available: boolean;
   item_id?: string; // Price list item ID if exists
 }
@@ -234,4 +232,45 @@ export const generatePriceListName = (startDate: string, endDate: string): strin
   const formattedDate = formatDate(end);
 
   return `PRICES ETA ${startDay}/${endDay} ${formattedDate}`;
+};
+
+/**
+ * Parse category VAC surcharges from JSON string
+ * @param surchargesJson - JSON string mapping category IDs to surcharges
+ * @returns Map of category ID to surcharge amount
+ */
+export const parseCategoryVacSurcharges = (surchargesJson?: string | null): Map<string, number> => {
+  if (!surchargesJson) return new Map();
+
+  try {
+    const parsed = JSON.parse(surchargesJson);
+    return new Map(Object.entries(parsed).map(([k, v]) => [k, Number(v)]));
+  } catch (error) {
+    console.error("Error parsing category VAC surcharges:", error);
+    return new Map();
+  }
+};
+
+/**
+ * Convert category VAC surcharges Map to JSON string
+ * @param surcharges - Map of category ID to surcharge amount
+ * @returns JSON string
+ */
+export const stringifyCategoryVacSurcharges = (surcharges: Map<string, number>): string => {
+  const obj = Object.fromEntries(surcharges);
+  return JSON.stringify(obj);
+};
+
+/**
+ * Get VAC surcharge for a specific category from a price list
+ * @param priceList - Price list with category_vac_surcharges field
+ * @param categoryId - Category ID to look up
+ * @returns Surcharge amount or null if not set
+ */
+export const getCategoryVacSurcharge = (
+  priceList: PriceList | PriceListWithItems,
+  categoryId: string
+): number | null => {
+  const surcharges = parseCategoryVacSurcharges(priceList.category_vac_surcharges);
+  return surcharges.get(categoryId) ?? null;
 };

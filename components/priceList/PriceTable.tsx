@@ -13,7 +13,8 @@ import type { PriceListTableRow } from "../../types/priceList";
 
 interface PriceTableProps {
   data: PriceListTableRow[];
-  onPriceChange?: (productId: string, field: "price_box" | "vac_surcharge_per_kg", value: number) => void;
+  categoryVacSurcharges?: Map<string, number>; // VAC surcharges per category from price list
+  onPriceChange?: (productId: string, field: "price_box", value: number) => void;
   editable?: boolean;
   loading?: boolean;
 }
@@ -22,6 +23,7 @@ const columnHelper = createColumnHelper<PriceListTableRow>();
 
 const PriceTable: React.FC<PriceTableProps> = ({
   data,
+  categoryVacSurcharges,
   onPriceChange,
   editable = false,
   loading = false,
@@ -83,6 +85,7 @@ const PriceTable: React.FC<PriceTableProps> = ({
           const columns = useMemo(() => {
             const showVacPricing = group.category?.enable_vac_pricing ?? false;
             const unitOfMeasure = group.category?.unit_of_measure || "Box";
+            const vacSurcharge = categoryVacSurcharges?.get(group.categoryId) ?? null;
 
             const baseColumns = [
               columnHelper.accessor("product.name", {
@@ -98,7 +101,9 @@ const PriceTable: React.FC<PriceTableProps> = ({
               }),
               columnHelper.accessor("price_box", {
                 id: "price_box",
-                header: `Price/${unitOfMeasure}`,
+                header: showVacPricing && vacSurcharge
+                  ? `${unitOfMeasure} (VAC +€${vacSurcharge.toFixed(2)}/kg)`
+                  : `Price/${unitOfMeasure}`,
                 cell: (info) => {
                   const value = info.getValue();
                   const productId = info.row.original.product.$id!;
@@ -130,47 +135,6 @@ const PriceTable: React.FC<PriceTableProps> = ({
               }),
             ];
 
-            if (showVacPricing) {
-              baseColumns.push(
-                columnHelper.accessor("vac_surcharge_per_kg", {
-                  id: "vac_surcharge_per_kg",
-                  header: `${unitOfMeasure} (VAC +€/kg)`,
-                  cell: (info) => {
-                    const value = info.getValue();
-                    const productId = info.row.original.product.$id!;
-
-                    if (editable && onPriceChange) {
-                      return (
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={value || ""}
-                          onChange={(e) =>
-                            onPriceChange(
-                              productId,
-                              "vac_surcharge_per_kg",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-                          placeholder="0.00"
-                        />
-                      );
-                    }
-
-                    return value !== null && value > 0 ? (
-                      <span className="text-gray-800 dark:text-gray-200">
-                        +€{value.toFixed(2)}/kg
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 dark:text-gray-600">-</span>
-                    );
-                  },
-                })
-              );
-            }
-
             baseColumns.push(
               columnHelper.accessor("is_available", {
                 id: "availability",
@@ -193,7 +157,7 @@ const PriceTable: React.FC<PriceTableProps> = ({
             );
 
             return baseColumns;
-          }, [editable, onPriceChange, group.category]);
+          }, [editable, onPriceChange, group.category, categoryVacSurcharges]);
 
           const table = useReactTable({
             data: group.rows,

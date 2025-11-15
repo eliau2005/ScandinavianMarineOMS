@@ -576,7 +576,9 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
                               {hasVac && (
                                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                   <span>VAC: {item.quantity_vac} units</span>
-                                  <span className="text-orange-600 dark:text-orange-400 font-medium">Calculated by supplier</span>
+                                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                                    Surcharge @ {item.vac_surcharge_at_order ? `€${item.vac_surcharge_at_order.toFixed(2)}` : 'N/A'}/kg
+                                  </span>
                                 </div>
                               )}
                             </div>

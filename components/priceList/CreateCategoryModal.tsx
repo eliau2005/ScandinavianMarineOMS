@@ -245,6 +245,9 @@ const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
               Enable VAC Pricing
             </label>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            When enabled, VAC surcharges can be set in each price list
+          </p>
         </div>
         </div>
 

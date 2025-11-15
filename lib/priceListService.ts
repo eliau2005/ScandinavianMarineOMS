@@ -526,7 +526,6 @@ export const priceListService = {
             product,
             category,
             price_box: item.price_box,
-            vac_surcharge_per_kg: item.vac_surcharge_per_kg,
             is_available: item.is_available,
             notes: item.notes,
           };
@@ -652,6 +651,7 @@ export const priceListService = {
         effective_date: newEffectiveDate,
         expiry_date: newExpiryDate,
         status: "draft",
+        category_vac_surcharges: original.category_vac_surcharges, // Copy VAC surcharges
         notes: original.notes,
         is_default: false,
         created_by: original.created_by,
@@ -665,7 +665,6 @@ export const priceListService = {
               price_list_id: newPriceList.$id!,
               product_id: item.product_id,
               price_box: item.price_box,
-              vac_surcharge_per_kg: item.vac_surcharge_per_kg,
               currency: item.currency,
               min_quantity: item.min_quantity,
               max_quantity: item.max_quantity,

@@ -315,7 +315,7 @@ const OrderPDFDocument: React.FC<OrderPDFDocumentProps> = ({
                         )}
                         {hasVac && (
                           <Text style={[styles.cellSmall, { color: '#ea580c' }]}>
-                            VAC: {item.quantity_vac} units - Calculated by supplier
+                            VAC: {item.quantity_vac} units - Surcharge @ {item.vac_surcharge_at_order ? `€${item.vac_surcharge_at_order.toFixed(2)}` : 'N/A'}/kg
                           </Text>
                         )}
                       </View>

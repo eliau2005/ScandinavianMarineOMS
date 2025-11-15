@@ -12,6 +12,10 @@ import type {
   ProductWithCategory,
   PriceListWithItems,
 } from "../../../types/priceList";
+import {
+  parseCategoryVacSurcharges,
+  stringifyCategoryVacSurcharges,
+} from "../../../types/priceList";
 import PriceListProductTable from "../../priceList/PriceListProductTable";
 import PriceListCard from "../../priceList/PriceListCard";
 import CreatePriceListModal from "../../priceList/CreatePriceListModal";
@@ -34,6 +38,7 @@ const PriceListManagement = () => {
   const [selectedPriceList, setSelectedPriceList] =
     useState<PriceListWithItems | null>(null);
   const [tableData, setTableData] = useState<PriceListTableRow[]>([]);
+  const [categoryVacSurcharges, setCategoryVacSurcharges] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -109,6 +114,10 @@ const PriceListManagement = () => {
       const details = await priceListService.getWithItems(priceListId);
       setSelectedPriceList(details);
 
+      // Parse category VAC surcharges
+      const surcharges = parseCategoryVacSurcharges(details.category_vac_surcharges);
+      setCategoryVacSurcharges(surcharges);
+
       // Build table data
       const [products, categories] = await Promise.all([
         productService.getAll(),
@@ -126,7 +135,6 @@ const PriceListManagement = () => {
           product,
           category: categoryMap.get(product.category_id)!,
           price_box: item?.price_box || null,
-          vac_surcharge_per_kg: item?.vac_surcharge_per_kg || null,
           is_available: item?.is_available ?? true,
           item_id: item?.$id,
         };
@@ -325,7 +333,7 @@ const PriceListManagement = () => {
 
   const handlePriceChange = (
     productId: string,
-    field: "price_box" | "vac_surcharge_per_kg",
+    field: "price_box",
     value: number
   ) => {
     setTableData((prev) =>
@@ -343,10 +351,19 @@ const PriceListManagement = () => {
       prev.map((row) => ({
         ...row,
         price_box: null,
-        vac_surcharge_per_kg: null,
       }))
     );
     showNotification("info", "All prices have been cleared");
+  };
+
+  const handleCategoryVacSurchargeChange = (categoryId: string, surcharge: number | null) => {
+    const newSurcharges = new Map(categoryVacSurcharges);
+    if (surcharge !== null && surcharge >= 0) {
+      newSurcharges.set(categoryId, surcharge);
+    } else {
+      newSurcharges.delete(categoryId);
+    }
+    setCategoryVacSurcharges(newSurcharges);
   };
 
   const handleSavePrices = async () => {
@@ -364,12 +381,11 @@ const PriceListManagement = () => {
       const creates: any[] = [];
 
       tableData.forEach((row) => {
-        if (row.price_box !== null || row.vac_surcharge_per_kg !== null) {
+        if (row.price_box !== null) {
           const itemData = {
             price_list_id: selectedPriceList.$id!,
             product_id: row.product.$id!,
             price_box: row.price_box || 0,
-            vac_surcharge_per_kg: row.vac_surcharge_per_kg || null,
             currency: "EUR",
             is_available: row.is_available,
           };
@@ -382,14 +398,18 @@ const PriceListManagement = () => {
         }
       });
 
+      // Save price list items and category VAC surcharges
       await Promise.all([
         ...updates.map(({ id, data }) =>
           priceListItemService.update(id!, data)
         ),
         ...creates.map((data) => priceListItemService.create(data)),
+        priceListService.update(selectedPriceList.$id!, {
+          category_vac_surcharges: stringifyCategoryVacSurcharges(categoryVacSurcharges),
+        }),
       ]);
 
-      showNotification("success", "Prices saved successfully");
+      showNotification("success", "Prices and VAC surcharges saved successfully");
       await loadPriceListDetails(selectedPriceList.$id!);
     } catch (error) {
       console.error("Error saving prices:", error);
@@ -657,15 +677,68 @@ const PriceListManagement = () => {
                 </div>
 
                 {/* Right Content Area - Detail (Product Table) */}
-                <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden flex flex-col">
                   {selectedCategory ? (
-                    <PriceListProductTable
-                      categoryName={selectedCategory.name}
-                      categoryIcon={selectedCategory.icon}
-                      products={selectedCategoryProducts}
-                      onPriceChange={handlePriceChange}
-                      editable={selectedPriceList?.status === "draft"}
-                    />
+                    <>
+                      {/* VAC Surcharge Section */}
+                      {(() => {
+                        const categoryData = tableData.find(row => row.category.$id === selectedCategoryId)?.category;
+                        const hasVacPricing = categoryData?.enable_vac_pricing ?? false;
+                        const currentSurcharge = categoryVacSurcharges.get(selectedCategoryId!) ?? null;
+
+                        if (!hasVacPricing) return null;
+
+                        return (
+                          <div className="flex-shrink-0 px-6 py-4 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">
+                                  package_2
+                                </span>
+                                <label className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                                  VAC Surcharge (per kg):
+                                </label>
+                              </div>
+                              {selectedPriceList?.status === "draft" ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-blue-900 dark:text-blue-200 font-medium">€</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={currentSurcharge ?? ""}
+                                    onChange={(e) => handleCategoryVacSurchargeChange(
+                                      selectedCategoryId!,
+                                      e.target.value ? parseFloat(e.target.value) : null
+                                    )}
+                                    className="w-32 px-3 py-1.5 border-2 border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                  />
+                                  <span className="text-xs text-blue-700 dark:text-blue-300">
+                                    (Applied to all VAC products in this category)
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-base font-bold text-blue-900 dark:text-blue-200">
+                                  {currentSurcharge !== null ? `€${currentSurcharge.toFixed(2)}` : "Not set"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Product Table */}
+                      <div className="flex-1 overflow-hidden">
+                        <PriceListProductTable
+                          categoryName={selectedCategory.name}
+                          categoryIcon={selectedCategory.icon}
+                          products={selectedCategoryProducts}
+                          onPriceChange={handlePriceChange}
+                          editable={selectedPriceList?.status === "draft"}
+                        />
+                      </div>
+                    </>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full p-12">
                       <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
