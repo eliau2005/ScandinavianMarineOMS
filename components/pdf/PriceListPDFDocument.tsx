@@ -8,6 +8,7 @@ import {
   Font,
 } from "@react-pdf/renderer";
 import type { PriceListWithItems, PriceListTableRow } from "../../types/priceList";
+import { parseCategoryVacSurcharges } from "../../types/priceList";
 import { formatCurrency, formatPDFDate, getDayName } from "../../lib/pdfHelpers";
 
 // Register fonts
@@ -149,6 +150,9 @@ const PriceListPDFDocument: React.FC<PriceListPDFDocumentProps> = ({
     return acc;
   }, {} as Record<string, PriceListTableRow[]>);
 
+  // Parse VAC surcharges
+  const categoryVacSurcharges = parseCategoryVacSurcharges(priceList.category_vac_surcharges);
+
   // Check if any product has VAC pricing
   const hasVACPricing = tableData.some((row) => row.price_box_vac !== null);
 
@@ -184,7 +188,14 @@ const PriceListPDFDocument: React.FC<PriceListPDFDocumentProps> = ({
         </View>
 
         {/* Tables by Category */}
-        {Object.entries(categorizedData).map(([categoryName, products], index) => (
+        {Object.entries(categorizedData).map(([categoryName, products], index) => {
+          // Get category info and VAC surcharge
+          const categoryId = products[0]?.category?.$id;
+          const unitOfMeasure = products[0]?.category?.unit_of_measure || "BOX";
+          const hasVACForCategory = products[0]?.category?.enable_vac_pricing;
+          const vacSurcharge = categoryId ? categoryVacSurcharges.get(categoryId) : null;
+
+          return (
           <View key={categoryName} style={styles.categorySection}>
             {/* Table */}
             <View style={styles.table}>
@@ -197,11 +208,13 @@ const PriceListPDFDocument: React.FC<PriceListPDFDocumentProps> = ({
                   UNIT
                 </Text>
                 <Text style={[styles.cellHeader, styles.priceCol]}>
-                  PRICE/BOX
+                  PRICE/{unitOfMeasure.toUpperCase()}
                 </Text>
-                {hasVACPricing && (
+                {hasVACForCategory && (
                   <Text style={[styles.cellHeader, styles.priceVACCol]}>
-                    PRICE/BOX (VAC)
+                    {vacSurcharge && vacSurcharge > 0
+                      ? `PRICE/${unitOfMeasure.toUpperCase()} (VAC +€${vacSurcharge.toFixed(2)}/kg)`
+                      : `PRICE/${unitOfMeasure.toUpperCase()} (VAC)`}
                   </Text>
                 )}
               </View>
@@ -224,22 +237,17 @@ const PriceListPDFDocument: React.FC<PriceListPDFDocumentProps> = ({
                   <Text style={[styles.cellBold, styles.priceCol]}>
                     {row.price_box ? formatCurrency(row.price_box) : "-"}
                   </Text>
-                  {hasVACPricing && (
+                  {hasVACForCategory && (
                     <Text style={[styles.cellBold, styles.priceVACCol]}>
-                      {row.price_box_vac
-                        ? `${formatCurrency(row.price_box_vac)}${
-                            row.vac_surcharge
-                              ? ` (+${formatCurrency(row.vac_surcharge)})`
-                              : ""
-                          }`
-                        : "-"}
+                      {row.price_box ? formatCurrency(row.price_box) : "-"}
                     </Text>
                   )}
                 </View>
               ))}
             </View>
           </View>
-        ))}
+          );
+        })}
 
         {/* Footer */}
         <Text
