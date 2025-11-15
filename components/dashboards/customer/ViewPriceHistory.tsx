@@ -12,10 +12,12 @@ import type {
   PriceListWithItems,
   PriceListTableRow
 } from "../../../types/priceList";
+import { parseCategoryVacSurcharges } from "../../../types/priceList";
 import { format } from "date-fns";
 import Modal from "../../common/Modal";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PriceListPDFDocument from "../../pdf/PriceListPDFDocument";
+import PriceListDetailView from "../../priceList/PriceListDetailView";
 
 interface SupplierPriceLists {
   supplierId: string;
@@ -31,15 +33,25 @@ interface PriceListPDFData {
 const ViewPriceHistory = () => {
   const [supplierPriceLists, setSupplierPriceLists] = useState<SupplierPriceLists[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPriceList, setSelectedPriceList] = useState<PriceList | null>(null);
-  const [priceListItems, setPriceListItems] = useState<PriceListItemWithDetails[]>([]);
-  const [pdfData, setPdfData] = useState<PriceListPDFData | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [loadingItems, setLoadingItems] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
+  const [selectedPriceList, setSelectedPriceList] = useState<PriceListWithItems | null>(null);
+  const [tableData, setTableData] = useState<PriceListTableRow[]>([]);
+  const [categoryVacSurcharges, setCategoryVacSurcharges] = useState<Map<string, number>>(new Map());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPriceHistory();
   }, []);
+
+  // Set initial selected category when table data is loaded
+  useEffect(() => {
+    if (tableData.length > 0 && !selectedCategoryId) {
+      const firstCategory = tableData[0]?.category;
+      if (firstCategory?.$id) {
+        setSelectedCategoryId(firstCategory.$id);
+      }
+    }
+  }, [tableData, selectedCategoryId]);
 
   const loadPriceHistory = async () => {
     setLoading(true);
@@ -78,19 +90,17 @@ const ViewPriceHistory = () => {
   };
 
   const handleViewPriceList = async (priceList: PriceList) => {
-    setSelectedPriceList(priceList);
-    setShowDetailsModal(true);
-    setLoadingItems(true);
-    setPdfData(null);
-
+    setLoading(true);
     try {
       // Load full price list details with items
       const details = await priceListService.getWithItems(priceList.$id!);
+      setSelectedPriceList(details);
 
-      // Set items for display
-      setPriceListItems(details.items || []);
+      // Parse category VAC surcharges
+      const surcharges = parseCategoryVacSurcharges(details.category_vac_surcharges);
+      setCategoryVacSurcharges(surcharges);
 
-      // Build table data for PDF
+      // Build table data
       const [products, categories] = await Promise.all([
         productService.getAll(),
         productCategoryService.getAll(),
@@ -107,18 +117,17 @@ const ViewPriceHistory = () => {
           product,
           category: categoryMap.get(product.category_id)!,
           price_box: item?.price_box || null,
-          price_box_vac: item?.price_box_vac || null,
-          vac_surcharge: item?.vac_surcharge || null,
           is_available: item?.is_available ?? true,
           item_id: item?.$id,
         };
       });
 
-      setPdfData({ priceList: details, tableData: rows });
+      setTableData(rows);
+      setViewMode('details');
     } catch (error) {
       console.error("Error loading price list items:", error);
     } finally {
-      setLoadingItems(false);
+      setLoading(false);
     }
   };
 
@@ -141,128 +150,143 @@ const ViewPriceHistory = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-          Price History
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          View archived price lists from your suppliers
-        </p>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-customer-accent"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading price history...</p>
+    <div className="flex flex-1 flex-col p-6 overflow-hidden">
+      {viewMode === 'list' ? (
+        // ==== LIST VIEW ====
+        <>
+          {/* Header */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+              Price History
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              View archived price lists from your suppliers
+            </p>
           </div>
-        </div>
-      ) : supplierPriceLists.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-            history
-          </span>
-          <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-            No price history available
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            Archived price lists from your suppliers will appear here
-          </p>
-        </div>
+
+          {/* Content */}
+          {loading ? (
+            <div className="flex items-center justify-center flex-1">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-customer-accent"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading price history...</p>
+              </div>
+            </div>
+          ) : supplierPriceLists.length === 0 ? (
+            <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
+                history
+              </span>
+              <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+                No price history available
+              </p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+                Archived price lists from your suppliers will appear here
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {supplierPriceLists.map((supplierData) => (
+                <div
+                  key={supplierData.supplierId}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                >
+                  {/* Supplier Header */}
+                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      {supplierData.supplierName}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {supplierData.priceLists.length} archived price{" "}
+                      {supplierData.priceLists.length === 1 ? "list" : "lists"}
+                    </p>
+                  </div>
+
+                  {/* Price Lists Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Price List Name
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Delivery Window
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Status
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {supplierData.priceLists.map((priceList) => (
+                          <tr
+                            key={priceList.$id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {priceList.name}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                              {format(new Date(priceList.effective_date), "MMM dd")} -{" "}
+                              {format(new Date(priceList.expiry_date), "MMM dd, yyyy")}
+                            </td>
+                            <td className="px-4 py-3">{getStatusBadge(priceList.status)}</td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => handleViewPriceList(priceList)}
+                                className="text-customer-accent hover:text-opacity-80 text-sm font-medium"
+                              >
+                                View Details
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
-        <div className="space-y-6">
-          {supplierPriceLists.map((supplierData) => (
-            <div
-              key={supplierData.supplierId}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+        // ==== DETAILS VIEW ====
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Header */}
+          <div className="flex-shrink-0 mb-4">
+            <button
+              onClick={() => {
+                setViewMode('list');
+                setSelectedPriceList(null);
+                setTableData([]);
+                setSelectedCategoryId(null);
+              }}
+              className="flex items-center gap-2 text-sm font-medium text-customer-accent hover:text-opacity-80 mb-4 transition-colors"
             >
-              {/* Supplier Header */}
-              <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  {supplierData.supplierName}
-                </h3>
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <span>Back to Price History</span>
+            </button>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                  {selectedPriceList?.name}
+                </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {supplierData.priceLists.length} archived price{" "}
-                  {supplierData.priceLists.length === 1 ? "list" : "lists"}
+                  Supplier: {selectedPriceList?.supplier_name}
                 </p>
               </div>
 
-              {/* Price Lists Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                        Price List Name
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                        Delivery Window
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {supplierData.priceLists.map((priceList) => (
-                      <tr
-                        key={priceList.$id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
-                          {priceList.name}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                          {format(new Date(priceList.effective_date), "MMM dd")} -{" "}
-                          {format(new Date(priceList.expiry_date), "MMM dd, yyyy")}
-                        </td>
-                        <td className="px-4 py-3">{getStatusBadge(priceList.status)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleViewPriceList(priceList)}
-                            className="text-customer-accent hover:text-opacity-80 text-sm font-medium"
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Price List Details Modal */}
-      {selectedPriceList && (
-        <Modal
-          isOpen={showDetailsModal}
-          onClose={() => {
-            setShowDetailsModal(false);
-            setSelectedPriceList(null);
-            setPriceListItems([]);
-            setPdfData(null);
-          }}
-          title={selectedPriceList.name}
-          wide
-        >
-          <div className="space-y-4">
-            {/* Export Button */}
-            <div className="flex justify-end mb-4">
-              {pdfData ? (
+              {selectedPriceList && (
                 <PDFDownloadLink
                   document={
                     <PriceListPDFDocument
-                      priceList={pdfData.priceList}
-                      tableData={pdfData.tableData}
+                      priceList={selectedPriceList}
+                      tableData={tableData}
                     />
                   }
                   fileName={`${selectedPriceList.name.replace(/[^a-z0-9]/gi, '_')}.pdf`}
@@ -277,133 +301,24 @@ const ViewPriceHistory = () => {
                     </>
                   )}
                 </PDFDownloadLink>
-              ) : (
-                <button
-                  disabled
-                  className="flex items-center gap-2 px-4 py-2 bg-customer-accent text-white rounded-lg text-sm font-medium opacity-50 cursor-not-allowed"
-                >
-                  <span className="material-symbols-outlined text-base">
-                    picture_as_pdf
-                  </span>
-                  <span>Loading...</span>
-                </button>
-              )}
-            </div>
-
-            {/* Price List Info */}
-            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {selectedPriceList.supplier_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
-                {getStatusBadge(selectedPriceList.status)}
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Delivery Window
-                </p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {format(new Date(selectedPriceList.effective_date), "MMM dd")} -{" "}
-                  {format(new Date(selectedPriceList.expiry_date), "MMM dd, yyyy")}
-                </p>
-              </div>
-            </div>
-
-            {/* Products */}
-            <div>
-              <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                Products & Prices
-              </h4>
-
-              {loadingItems ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-customer-accent"></div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Loading products...
-                    </p>
-                  </div>
-                </div>
-              ) : priceListItems.length === 0 ? (
-                <p className="text-sm text-gray-600 dark:text-gray-400 py-4 text-center">
-                  No products in this price list
-                </p>
-              ) : (
-                <div className="space-y-6">
-                  {(() => {
-                    // Group items by category
-                    const grouped = priceListItems.reduce((acc, item) => {
-                      const categoryName = item.product?.category?.name || "Other";
-                      if (!acc[categoryName]) {
-                        acc[categoryName] = [];
-                      }
-                      acc[categoryName].push(item);
-                      return acc;
-                    }, {} as Record<string, typeof priceListItems>);
-
-                    return Object.entries(grouped).map(([categoryName, items]) => {
-                      // Check if this category has VAC pricing enabled
-                      const hasVacPricing = items.length > 0 && items[0].product?.category?.enable_vac_pricing;
-                      const unitOfMeasure = items.length > 0 ? items[0].product?.category?.unit_of_measure || "Box" : "Box";
-
-                      return (
-                      <div key={categoryName}>
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-700">
-                              <tr>
-                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                  Product
-                                </th>
-                                <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                  Price/{unitOfMeasure}
-                                </th>
-                                {hasVacPricing && (
-                                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    Price/{unitOfMeasure} (VAC)
-                                  </th>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                              {items.map((item) => (
-                                <tr
-                                  key={item.$id}
-                                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                  <td className="px-3 py-2 text-sm text-gray-800 dark:text-gray-200">
-                                    {item.product?.name || "Unknown Product"}
-                                  </td>
-                                  <td className="px-3 py-2 text-sm text-right text-gray-800 dark:text-gray-200">
-                                    {item.price_box !== null && item.price_box !== undefined
-                                      ? `€ ${item.price_box.toFixed(2)}`
-                                      : "-"}
-                                  </td>
-                                  {hasVacPricing && (
-                                    <td className="px-3 py-2 text-sm text-right text-gray-800 dark:text-gray-200">
-                                      {item.price_box_vac !== null && item.price_box_vac !== undefined
-                                        ? `€ ${item.price_box_vac.toFixed(2)}`
-                                        : "-"}
-                                    </td>
-                                  )}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                      );
-                    });
-                  })()}
-                </div>
               )}
             </div>
           </div>
-        </Modal>
+
+          {/* Master-Detail Layout */}
+          <div className="flex-1 overflow-hidden">
+            {selectedPriceList && tableData.length > 0 && (
+              <PriceListDetailView
+                tableData={tableData}
+                priceList={selectedPriceList}
+                editable={false}
+                selectedCategoryId={selectedCategoryId}
+                onSelectCategory={setSelectedCategoryId}
+                categoryVacSurcharges={categoryVacSurcharges}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

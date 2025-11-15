@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { priceListService } from "../../../lib/priceListService";
-import type { PriceList } from "../../../types/priceList";
+import type { PriceList, PriceListWithItems, PriceListTableRow } from "../../../types/priceList";
+import { parseCategoryVacSurcharges } from "../../../types/priceList";
 import { format } from "date-fns";
 import Modal from "../../common/Modal";
 import PriceTable from "../../priceList/PriceTable";
-import type { PriceListTableRow } from "../../../types/priceList";
 import { markAsRead } from "../../../lib/notificationService";
+import PriceListDetailView from "../../priceList/PriceListDetailView";
+import { productService, productCategoryService } from "../../../lib/priceListService";
 
 interface AllPriceListsProps {
   openPriceListId?: string | null;
@@ -18,9 +20,11 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
 }) => {
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPriceList, setSelectedPriceList] = useState<PriceList | null>(null);
-  const [priceListItems, setPriceListItems] = useState<PriceListTableRow[]>([]);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'details'>('list');
+  const [selectedPriceList, setSelectedPriceList] = useState<PriceListWithItems | null>(null);
+  const [tableData, setTableData] = useState<PriceListTableRow[]>([]);
+  const [categoryVacSurcharges, setCategoryVacSurcharges] = useState<Map<string, number>>(new Map());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "pending_approval" | "active" | "archived">("all");
@@ -34,7 +38,7 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
     loadPriceLists();
   }, []);
 
-  // Auto-open modal when openPriceListId is provided
+  // Auto-open details when openPriceListId is provided
   useEffect(() => {
     if (openPriceListId && priceLists.length > 0) {
       const priceList = priceLists.find((pl) => pl.$id === openPriceListId);
@@ -47,6 +51,16 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
       }
     }
   }, [openPriceListId, priceLists]);
+
+  // Set initial selected category when table data is loaded
+  useEffect(() => {
+    if (tableData.length > 0 && !selectedCategoryId) {
+      const firstCategory = tableData[0]?.category;
+      if (firstCategory?.$id) {
+        setSelectedCategoryId(firstCategory.$id);
+      }
+    }
+  }, [tableData, selectedCategoryId]);
 
   const loadPriceLists = async () => {
     setLoading(true);
@@ -61,13 +75,45 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
   };
 
   const handleViewDetails = async (priceList: PriceList) => {
+    setLoading(true);
     try {
-      const items = await priceListService.getItems(priceList.$id!);
-      setPriceListItems(items);
-      setSelectedPriceList(priceList);
-      setShowDetailsModal(true);
+      // Load full price list details with items
+      const details = await priceListService.getWithItems(priceList.$id!);
+      setSelectedPriceList(details);
+
+      // Parse category VAC surcharges
+      const surcharges = parseCategoryVacSurcharges(details.category_vac_surcharges);
+      setCategoryVacSurcharges(surcharges);
+
+      // Build table data
+      const [products, categories] = await Promise.all([
+        productService.getAll(),
+        productCategoryService.getAll(),
+      ]);
+
+      const categoryMap = new Map(categories.map((c) => [c.$id!, c]));
+      const itemMap = new Map(
+        details.items?.map((item) => [item.product_id, item]) || []
+      );
+
+      const rows: PriceListTableRow[] = products.map((product) => {
+        const item = itemMap.get(product.$id!);
+        return {
+          product,
+          category: categoryMap.get(product.category_id)!,
+          price_box: item?.price_box || null,
+          is_available: item?.is_available ?? true,
+          item_id: item?.$id,
+        };
+      });
+
+      setTableData(rows);
+      setViewMode('details');
     } catch (error) {
-      console.error("Error loading price list items:", error);
+      console.error("Error loading price list details:", error);
+      showNotification("error", "Failed to load price list details");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,7 +141,7 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
     }
   };
 
-  const handleApprovePriceListFromModal = async () => {
+  const handleApprovePriceListFromDetails = async () => {
     if (!selectedPriceList) return;
 
     setProcessing(selectedPriceList.$id!);
@@ -106,10 +152,11 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
       // Reload price lists
       await loadPriceLists();
 
-      // Close modal
-      setShowDetailsModal(false);
+      // Go back to list view
+      setViewMode('list');
       setSelectedPriceList(null);
-      setPriceListItems([]);
+      setTableData([]);
+      setSelectedCategoryId(null);
 
       showNotification("success", `Price list "${selectedPriceList.name}" has been activated successfully`);
     } catch (error) {
@@ -195,7 +242,7 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
   ).length;
 
   return (
-    <div className="flex flex-1 flex-col p-6">
+    <div className="flex flex-1 flex-col p-6 overflow-hidden">
       {/* Notification */}
       {notification && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
@@ -211,338 +258,328 @@ const AllPriceLists: React.FC<AllPriceListsProps> = ({
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-          All Price Lists
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          View and compare price lists from all suppliers
-          {pendingApprovalsCount > 0 && (
-            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-              {pendingApprovalsCount} Pending Approval
-            </span>
-          )}
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Search
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
-                search
-              </span>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search price lists or suppliers..."
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-              />
-            </div>
-          </div>
-
-          {/* Supplier Filter */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Supplier
-            </label>
-            <select
-              value={filterSupplier}
-              onChange={(e) => setFilterSupplier(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-            >
-              <option value="">All Suppliers</option>
-              {uniqueSuppliers.map((supplier) => (
-                <option key={supplier} value={supplier}>
-                  {supplier}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Status
-            </label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-            >
-              <option value="all">All Statuses</option>
-              <option value="draft">Draft</option>
-              <option value="pending_approval">Pending Approval ({pendingApprovalsCount})</option>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-admin-accent"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading price lists...</p>
-          </div>
-        </div>
-      ) : filteredPriceLists.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-            receipt_long
-          </span>
-          <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-            No price lists found
-          </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            Try adjusting your filters
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {groupedBySupplier
-            .filter((group) => group.priceLists.length > 0)
-            .map(({ supplierName, priceLists: supplierPriceLists }) => (
-              <div
-                key={supplierName}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
-              >
-                {/* Supplier Header */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">
-                      store
-                    </span>
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                      {supplierName}
-                    </h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ({supplierPriceLists.length}{" "}
-                      {supplierPriceLists.length === 1 ? "price list" : "price lists"})
-                    </span>
-                  </div>
-                </div>
-
-                {/* Price Lists Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Name
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Effective Date
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Expiry Date
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Status
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {supplierPriceLists.map((priceList) => (
-                        <tr
-                          key={priceList.$id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {priceList.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                            {format(new Date(priceList.effective_date), "MMM dd, yyyy")}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                            {priceList.expiry_date
-                              ? format(new Date(priceList.expiry_date), "MMM dd, yyyy")
-                              : "No expiry"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                                priceList.status
-                              )}`}
-                            >
-                              {getStatusLabel(priceList.status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {priceList.status === "pending_approval" ? (
-                                <>
-                                  <button
-                                    onClick={() => handleApprovePriceList(priceList)}
-                                    disabled={processing === priceList.$id}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {processing === priceList.$id ? (
-                                      <>
-                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                        <span>Approving...</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span className="material-symbols-outlined text-sm">
-                                          check_circle
-                                        </span>
-                                        <span>Approve</span>
-                                      </>
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => handleRejectPriceList(priceList)}
-                                    disabled={processing === priceList.$id}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {processing === priceList.$id ? (
-                                      <>
-                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                        <span>Rejecting...</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span className="material-symbols-outlined text-sm">
-                                          cancel
-                                        </span>
-                                        <span>Reject</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => handleViewDetails(priceList)}
-                                  className="text-admin-accent hover:text-opacity-80 text-sm font-medium"
-                                >
-                                  View Details
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
-
-      {/* Details Modal */}
-      {selectedPriceList && (
-        <Modal
-          isOpen={showDetailsModal}
-          onClose={() => {
-            setShowDetailsModal(false);
-            setSelectedPriceList(null);
-            setPriceListItems([]);
-          }}
-          title={selectedPriceList.name}
-          wide
-        >
-          <div className="space-y-4">
-            {/* Approve Button */}
-            {selectedPriceList.status === "pending_approval" && (
-              <div className="flex justify-end mb-4">
-                <button
-                  onClick={handleApprovePriceListFromModal}
-                  disabled={processing === selectedPriceList.$id}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {processing === selectedPriceList.$id ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Approving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-base">
-                        check_circle
-                      </span>
-                      <span>Approve Price List</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-            {/* Price List Info */}
-            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {selectedPriceList.supplier_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
-                    selectedPriceList.status
-                  )}`}
-                >
-                  {selectedPriceList.status}
+      {viewMode === 'list' ? (
+        // ==== LIST VIEW ====
+        <>
+          {/* Header */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+              All Price Lists
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              View and compare price lists from all suppliers
+              {pendingApprovalsCount > 0 && (
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                  {pendingApprovalsCount} Pending Approval
                 </span>
-              </div>
+              )}
+            </p>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Search */}
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Effective Date</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {format(new Date(selectedPriceList.effective_date), "MMMM dd, yyyy")}
-                </p>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Search
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search price lists or suppliers..."
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
+                  />
+                </div>
               </div>
+
+              {/* Supplier Filter */}
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Expiry Date</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {selectedPriceList.expiry_date
-                    ? format(new Date(selectedPriceList.expiry_date), "MMMM dd, yyyy")
-                    : "No expiry"}
-                </p>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Supplier
+                </label>
+                <select
+                  value={filterSupplier}
+                  onChange={(e) => setFilterSupplier(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
+                >
+                  <option value="">All Suppliers</option>
+                  {uniqueSuppliers.map((supplier) => (
+                    <option key={supplier} value={supplier}>
+                      {supplier}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Status
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="pending_approval">Pending Approval ({pendingApprovalsCount})</option>
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
               </div>
             </div>
+          </div>
 
-            {/* Notes */}
-            {selectedPriceList.notes && (
-              <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  {selectedPriceList.notes}
+          {/* Content */}
+          {loading ? (
+            <div className="flex items-center justify-center flex-1">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-admin-accent"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading price lists...</p>
+              </div>
+            </div>
+          ) : filteredPriceLists.length === 0 ? (
+            <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
+                receipt_long
+              </span>
+              <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+                No price lists found
+              </p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+                Try adjusting your filters
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedBySupplier
+                .filter((group) => group.priceLists.length > 0)
+                .map(({ supplierName, priceLists: supplierPriceLists }) => (
+                  <div
+                    key={supplierName}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
+                  >
+                    {/* Supplier Header */}
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">
+                          store
+                        </span>
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          {supplierName}
+                        </h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          ({supplierPriceLists.length}{" "}
+                          {supplierPriceLists.length === 1 ? "price list" : "price lists"})
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Price Lists Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Effective Date
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Expiry Date
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {supplierPriceLists.map((priceList) => (
+                            <tr
+                              key={priceList.$id}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                                {priceList.name}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {format(new Date(priceList.effective_date), "MMM dd, yyyy")}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {priceList.expiry_date
+                                  ? format(new Date(priceList.expiry_date), "MMM dd, yyyy")
+                                  : "No expiry"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                                    priceList.status
+                                  )}`}
+                                >
+                                  {getStatusLabel(priceList.status)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {priceList.status === "pending_approval" ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleApprovePriceList(priceList)}
+                                        disabled={processing === priceList.$id}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        {processing === priceList.$id ? (
+                                          <>
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                            <span>Approving...</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <span className="material-symbols-outlined text-sm">
+                                              check_circle
+                                            </span>
+                                            <span>Approve</span>
+                                          </>
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectPriceList(priceList)}
+                                        disabled={processing === priceList.$id}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        {processing === priceList.$id ? (
+                                          <>
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                            <span>Rejecting...</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <span className="material-symbols-outlined text-sm">
+                                              cancel
+                                            </span>
+                                            <span>Reject</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleViewDetails(priceList)}
+                                      className="text-admin-accent hover:text-opacity-80 text-sm font-medium"
+                                    >
+                                      View Details
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </>
+      ) : (
+        // ==== DETAILS VIEW ====
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Header */}
+          <div className="flex-shrink-0 mb-4">
+            <button
+              onClick={() => {
+                setViewMode('list');
+                setSelectedPriceList(null);
+                setTableData([]);
+                setSelectedCategoryId(null);
+              }}
+              className="flex items-center gap-2 text-sm font-medium text-admin-accent hover:text-opacity-80 mb-4 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <span>Back to All Price Lists</span>
+            </button>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                  {selectedPriceList?.name}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Supplier: {selectedPriceList?.supplier_name}
                 </p>
               </div>
-            )}
 
-            {/* Price Table */}
-            <div>
-              <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                Products & Pricing
-              </h4>
-              {priceListItems.length > 0 ? (
-                <PriceTable
-                  data={priceListItems}
-                  showVacPricing={selectedPriceList.show_vac_pricing || false}
-                  editable={false}
-                />
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                  No products in this price list
-                </p>
+              {selectedPriceList?.status === "pending_approval" && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleApprovePriceListFromDetails}
+                    disabled={processing === selectedPriceList.$id}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processing === selectedPriceList.$id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Approving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-base">
+                          check_circle
+                        </span>
+                        <span>Approve Price List</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => selectedPriceList && handleRejectPriceList(selectedPriceList)}
+                    disabled={processing === selectedPriceList.$id}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processing === selectedPriceList.$id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Rejecting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-base">
+                          cancel
+                        </span>
+                        <span>Reject</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>
-        </Modal>
+
+          {/* Master-Detail Layout */}
+          <div className="flex-1 overflow-hidden">
+            {selectedPriceList && tableData.length > 0 && (
+              <PriceListDetailView
+                tableData={tableData}
+                priceList={selectedPriceList}
+                editable={false}
+                selectedCategoryId={selectedCategoryId}
+                onSelectCategory={setSelectedCategoryId}
+                categoryVacSurcharges={categoryVacSurcharges}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

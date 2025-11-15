@@ -373,10 +373,10 @@ const PlaceOrder = () => {
           )}
         </>
       ) : (
-        // ===== CATEGORY-PAGINATED ORDERING VIEW =====
+        // ===== MASTER-DETAIL ORDERING VIEW =====
         <div className="flex flex-col h-full">
           {/* Compact Header - Single Row */}
-          <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="flex items-center justify-between gap-4 mb-3 flex-shrink-0">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleBackToSelection}
@@ -413,48 +413,66 @@ const PlaceOrder = () => {
             </div>
           </div>
 
-          {/* Compact Navigation and Progress */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 mb-3">
-            <div className="flex items-center justify-between gap-4 mb-2">
-              <button
-                onClick={handlePreviousCategory}
-                disabled={currentCategoryIndex === 0}
-                className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="material-symbols-outlined text-sm">arrow_back</span>
-                <span>Previous</span>
-              </button>
-
-              <div className="text-center flex-1">
-                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 leading-tight">
-                  {currentCategoryName}
-                </h3>
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {currentCategoryIndex + 1} / {categories.length}
-                </span>
+          {/* Master-Detail Layout */}
+          <div className="flex gap-4 flex-1 overflow-hidden">
+            {/* Left Column - Master (Category List) */}
+            <div className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  Categories
+                </h4>
               </div>
+              <div className="overflow-y-auto h-[calc(100%-3rem)]">
+                {categories.map((categoryName, index) => {
+                  const isSelected = currentCategoryIndex === index;
+                  const categoryProducts = productsMap.get(categoryName) || [];
+                  const categoryIcon = categoryProducts[0]?.category?.icon;
 
-              <button
-                onClick={handleNextCategory}
-                disabled={currentCategoryIndex === categories.length - 1}
-                className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span>Next</span>
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </button>
+                  return (
+                    <button
+                      key={categoryName}
+                      onClick={() => setCurrentCategoryIndex(index)}
+                      className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-colors ${
+                        isSelected
+                          ? "bg-customer-accent/10 dark:bg-customer-accent/20 border-l-4 border-l-customer-accent"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {categoryIcon && (
+                          <span
+                            className={`material-symbols-outlined text-lg ${
+                              isSelected
+                                ? "text-customer-accent"
+                                : "text-gray-500 dark:text-gray-400"
+                            }`}
+                          >
+                            {categoryIcon}
+                          </span>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium truncate ${
+                              isSelected
+                                ? "text-gray-900 dark:text-gray-100"
+                                : "text-gray-700 dark:text-gray-300"
+                            }`}
+                          >
+                            {categoryName}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {categoryProducts.length} {categoryProducts.length === 1 ? "product" : "products"}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Compact Progress Bar */}
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-              <div
-                className="bg-customer-accent h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${((currentCategoryIndex + 1) / categories.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Products Table - Scrollable */}
-          <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            {/* Right Content Area - Detail (Product Table) */}
+            <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-md">
             <div className="h-full overflow-y-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-10">
@@ -466,21 +484,16 @@ const PlaceOrder = () => {
                       Unit
                     </th>
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Price/{currentCategoryUnit}
+                    </th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                       {currentCategoryUnit}
                     </th>
                     {currentCategoryHasVac && (
-                      <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        {currentCategoryVacSurcharge
+                      <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {currentCategoryVacSurcharge !== null && currentCategoryVacSurcharge > 0
                           ? `${currentCategoryUnit} (VAC +€${currentCategoryVacSurcharge.toFixed(2)}/kg)`
                           : `${currentCategoryUnit} (VAC)`}
-                      </th>
-                    )}
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Qty (Regular)
-                    </th>
-                    {currentCategoryHasVac && (
-                      <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        Qty (VAC)
                       </th>
                     )}
                     <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -517,20 +530,6 @@ const PlaceOrder = () => {
                             </p>
                           </div>
                         </td>
-                        {currentCategoryHasVac && (
-                          <td className="px-6 py-4 text-right">
-                            <div className="text-sm">
-                              <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                € {product.price_box?.toFixed(2)}
-                              </p>
-                              {currentCategoryVacSurcharge && currentCategoryVacSurcharge > 0 && (
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                                  +€{currentCategoryVacSurcharge.toFixed(2)}/kg
-                                </p>
-                              )}
-                            </div>
-                          </td>
-                        )}
                         {/* Regular Quantity */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 justify-center">
@@ -641,6 +640,7 @@ const PlaceOrder = () => {
                   })}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         </div>
