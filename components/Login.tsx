@@ -170,6 +170,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               required
               disabled={loading}
               className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              autoComplete="username"
             />
           </motion.div>
 
@@ -188,6 +189,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               required
               disabled={loading}
               className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              autoComplete="current-password"
               rightIcon={
                 <button
                   type="button"
