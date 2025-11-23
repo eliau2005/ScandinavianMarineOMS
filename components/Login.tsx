@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { account, databases, appwriteConfig } from "../lib/appwrite";
 import { AppwriteException } from "appwrite";
+import Button from "./ui/Button";
+import Input from "./ui/Input";
+import Card from "./ui/Card";
 
 type UserType = "Admin" | "Supplier" | "Customer";
 
@@ -19,22 +22,16 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   const accentColors = {
     Admin: {
-      bg: "bg-admin-accent",
       text: "text-admin-accent",
-      ring: "focus:ring-admin-accent",
-      checkbox: "text-admin-accent",
+      bg: "bg-admin-accent",
     },
     Supplier: {
-      bg: "bg-supplier-accent",
       text: "text-supplier-accent",
-      ring: "focus:ring-supplier-accent",
-      checkbox: "text-supplier-accent",
+      bg: "bg-supplier-accent",
     },
     Customer: {
-      bg: "bg-customer-accent",
       text: "text-customer-accent",
-      ring: "focus:ring-customer-accent",
-      checkbox: "text-customer-accent",
+      bg: "bg-customer-accent",
     },
   };
 
@@ -46,63 +43,40 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      console.log("Login attempt started for:", email);
-
       // Create email session with Appwrite
       await account.createEmailPasswordSession(email, password);
-      console.log("Session created successfully");
 
       // Get current user
       const user = await account.get();
-      console.log("User retrieved, ID:", user.$id);
 
       // Fetch user profile to check role
-      console.log("Fetching profile from database...");
-      console.log("Database ID:", appwriteConfig.databaseId);
-      console.log("Collection ID:", appwriteConfig.profilesCollectionId);
-      console.log("Document ID (User ID):", user.$id);
-
       const profileDoc = await databases.getDocument(
         appwriteConfig.databaseId,
         appwriteConfig.profilesCollectionId,
         user.$id
       );
 
-      console.log("Profile retrieved:", profileDoc);
-
       // Check if the role matches the selected user type
       if (profileDoc.role !== userType) {
-        console.log(`Role mismatch: expected ${userType}, got ${profileDoc.role}`);
-        // Delete the session if role doesn't match
         await account.deleteSession("current");
         throw new Error(
-          `You are registered as a ${profileDoc.role}. Please select the "${profileDoc.role}" tab above and try again.`
+          `You are registered as a ${profileDoc.role}. Please select the "${profileDoc.role}" tab and try again.`
         );
       }
 
-      console.log("Login successful!");
-      // Login successful, trigger parent component refresh
       onLoginSuccess();
     } catch (err: any) {
       console.error("Login error:", err);
-
       if (err instanceof AppwriteException) {
-        console.error("Appwrite error code:", err.code);
-        console.error("Appwrite error type:", err.type);
-        console.error("Appwrite error message:", err.message);
-
-        // Handle Appwrite-specific errors
         if (err.code === 401) {
-          setError("Invalid email or password. Please check your credentials and try again.");
+          setError("Invalid email or password.");
         } else if (err.code === 404) {
-          setError("Your account profile could not be found. Please contact your administrator for assistance.");
-        } else if (err.code === 403) {
-          setError("Access to your account is currently restricted. Please contact your administrator for assistance.");
+          setError("Account not found.");
         } else {
-          setError(err.message || "We're experiencing technical difficulties. Please try again later.");
+          setError(err.message || "Login failed.");
         }
       } else {
-        setError(err.message || "We're experiencing technical difficulties. Please try again later.");
+        setError(err.message || "An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -110,184 +84,135 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark font-display">
-      <div className="flex h-full min-h-screen grow flex-col">
-        <div className="flex min-h-screen flex-1">
-          <div className="hidden lg:flex lg:w-2/5 flex-col">
-            <div
-              className="flex h-full w-full grow items-center justify-center bg-center bg-no-repeat bg-cover aspect-auto"
-              style={{
-                backgroundImage: "linear-gradient(to top, #E0F7FA, #B2EBF2)",
-              }}
-            ></div>
-          </div>
-          <div className="flex flex-1 flex-col items-center justify-center bg-white dark:bg-gray-900 p-6 md:p-12">
-            <div className="flex w-full max-w-md flex-col items-center gap-8">
-              <div className="flex flex-col items-center gap-3 p-4 text-center">
-                <p className="text-[#212529] dark:text-gray-100 tracking-light text-[28px] font-bold leading-tight">
-                  Scandinavian Marine (OMS)
-                </p>
-              </div>
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+      {/* Background Image with Overlay */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1516916759473-600c07bc5d5f?q=80&w=2560&auto=format&fit=crop')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+      </div>
 
-              <form
-                onSubmit={handleLogin}
-                className="flex w-full flex-col gap-6"
-              >
-                <div className="flex w-full px-4 py-3">
-                  <div className="flex h-12 flex-1 items-center justify-center rounded-lg bg-background-light dark:bg-background-dark p-1.5 shadow-inner">
-                    {(["Admin", "Supplier", "Customer"] as UserType[]).map(
-                      (type) => (
-                        <label
-                          key={type}
-                          className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 text-[#6C757D] dark:text-gray-400 text-sm font-medium leading-normal transition-all duration-200 ${
-                            userType === type
-                              ? `bg-white dark:bg-gray-700 shadow-md ${currentAccent.text}`
-                              : ""
-                          }`}
-                        >
-                          <span className="truncate">{type}</span>
-                          <input
-                            type="radio"
-                            name="user-type"
-                            value={type}
-                            checked={userType === type}
-                            onChange={() => setUserType(type)}
-                            className="invisible w-0"
-                            disabled={loading}
-                          />
-                        </label>
-                      )
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col w-full gap-4 px-4">
-                  <div className="flex flex-col flex-1">
-                    <label
-                      htmlFor="email-address"
-                      className="text-[#212529] dark:text-gray-200 text-sm font-medium leading-normal pb-2"
-                    >
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <span
-                        className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                        style={{ fontSize: "20px" }}
-                      >
-                        mail
-                      </span>
-                      <input
-                        id="email-address"
-                        className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#212529] dark:text-gray-100 focus:outline-none focus:ring-2 border border-[#CED4DA] dark:border-gray-600 bg-[#F8F9FA] dark:bg-gray-800 h-12 placeholder:text-[#6C757D] dark:placeholder-gray-500 pl-10 pr-4 text-base font-normal leading-normal transition-all duration-200 ${currentAccent.ring}`}
-                        placeholder="Enter your email address"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col flex-1">
-                    <label
-                      htmlFor="password"
-                      className="text-[#212529] dark:text-gray-200 text-sm font-medium leading-normal pb-2"
-                    >
-                      Password
-                    </label>
-                    <div className="relative">
-                      <span
-                        className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                        style={{ fontSize: "20px" }}
-                      >
-                        lock
-                      </span>
-                      <input
-                        id="password"
-                        className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#212529] dark:text-gray-100 focus:outline-none focus:ring-2 border border-[#CED4DA] dark:border-gray-600 bg-[#F8F9FA] dark:bg-gray-800 h-12 placeholder:text-[#6C757D] dark:placeholder-gray-500 pl-10 pr-10 text-base font-normal leading-normal transition-all duration-200 ${currentAccent.ring}`}
-                        placeholder="Enter your password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
-                      <button
-                        type="button"
-                        aria-label="Toggle password visibility"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6C757D] dark:text-gray-400"
-                        disabled={loading}
-                      >
-                        <span
-                          className="material-symbols-outlined"
-                          style={{ fontSize: "20px" }}
-                        >
-                          {showPassword ? "visibility_off" : "visibility"}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md px-4 animate-fade-in">
+        <Card glass className="w-full p-8 sm:p-10 border-white/20 shadow-2xl">
+          <div className="flex flex-col items-center gap-6 mb-8">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-2">
+                Welcome Back
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                Sign in to Scandinavian Marine OMS
+              </p>
+            </div>
 
-                {error && (
-                  <div className="px-4">
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                      <span className="material-symbols-outlined text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" style={{ fontSize: "20px" }}>
-                        error
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-red-800 dark:text-red-200 leading-relaxed">
-                          {error}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between px-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="remember-me"
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className={`form-checkbox h-4 w-4 rounded border-gray-300 focus:ring-1 ${currentAccent.checkbox} ${currentAccent.ring}`}
-                      disabled={loading}
-                    />
-                    <label
-                      htmlFor="remember-me"
-                      className="text-sm text-[#6C757D] dark:text-gray-400"
-                    >
-                      Remember Me
-                    </label>
-                  </div>
-                  <a
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    className={`text-sm font-medium transition-colors duration-200 hover:underline ${
-                      currentAccent.text
-                    } ${loading ? "pointer-events-none opacity-50" : ""}`}
-                  >
-                    Forgot Password?
-                  </a>
-                </div>
-                <div className="px-4 py-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`flex w-full items-center justify-center rounded-lg h-12 px-6 text-base font-medium text-white shadow-sm transition-all duration-200 hover:shadow-lg disabled:opacity-75 disabled:cursor-not-allowed ${currentAccent.bg}`}
-                  >
-                    {loading ? (
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-t-transparent"></div>
-                    ) : (
-                      <span>Login</span>
-                    )}
-                  </button>
-                </div>
-              </form>
+            {/* User Type Selector */}
+            <div className="w-full p-1.5 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30 flex relative">
+              {/* Animated Background Pill - Simplified for now with direct classes */}
+              {(["Admin", "Supplier", "Customer"] as UserType[]).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setUserType(type)}
+                  className={`
+                    flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative z-10
+                    ${userType === type
+                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    }
+                  `}
+                >
+                  {type}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
+
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              leftIcon={<span className="material-symbols-outlined text-[20px]">mail</span>}
+            />
+
+            <div className="relative">
+              <Input
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                leftIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="focus:outline-none hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
+                }
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50/80 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm flex items-center gap-2 animate-shake">
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                {error}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className={`
+                    rounded border-gray-300 text-primary focus:ring-primary 
+                    transition-colors duration-200 cursor-pointer
+                  `}
+                />
+                <span className="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+                  Remember me
+                </span>
+              </label>
+              <a href="#" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                Forgot password?
+              </a>
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              isLoading={loading}
+              className={`w-full mt-2 ${userType === "Admin" ? "bg-admin-accent hover:bg-admin-accent/90 shadow-admin-accent/30" :
+                  userType === "Supplier" ? "bg-supplier-accent hover:bg-supplier-accent/90 shadow-supplier-accent/30" :
+                    "bg-customer-accent hover:bg-customer-accent/90 shadow-customer-accent/30"
+                }`}
+            >
+              Sign In
+            </Button>
+          </form>
+        </Card>
+
+        <p className="text-center mt-8 text-white/60 text-sm">
+          &copy; {new Date().getFullYear()} Scandinavian Marine. All rights reserved.
+        </p>
       </div>
     </div>
   );

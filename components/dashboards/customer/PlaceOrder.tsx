@@ -10,6 +10,9 @@ import type { CartItem, OrderItem } from "../../../types/order";
 import { generateOrderNumber } from "../../../types/order";
 import { createNotification } from "../../../lib/notificationService";
 import Modal from "../../common/Modal";
+import Button from "../../ui/Button";
+import Card from "../../ui/Card";
+import Input from "../../ui/Input";
 
 interface SupplierWithPriceList {
   supplierId: string;
@@ -145,18 +148,6 @@ const PlaceOrder = () => {
       newCart.delete(productId);
     }
     setCart(newCart);
-  };
-
-  const handleNextCategory = () => {
-    if (currentCategoryIndex < categories.length - 1) {
-      setCurrentCategoryIndex(currentCategoryIndex + 1);
-    }
-  };
-
-  const handlePreviousCategory = () => {
-    if (currentCategoryIndex > 0) {
-      setCurrentCategoryIndex(currentCategoryIndex - 1);
-    }
   };
 
   const handleViewSummary = () => {
@@ -298,76 +289,82 @@ const PlaceOrder = () => {
         // ===== SUPPLIER & PRICE LIST SELECTION VIEW =====
         <>
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+          <div className="mb-8 animate-fade-in">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 tracking-tight">
               Select Supplier & Price List
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
               Choose a supplier and their active price list to start ordering
             </p>
           </div>
 
           {supplierPriceLists.length === 0 ? (
-            <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-                store
-              </span>
-              <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+            <Card className="flex flex-col items-center justify-center py-16 animate-fade-in" glass>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-full mb-4">
+                <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-500">
+                  store
+                </span>
+              </div>
+              <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">
                 No active price lists available
               </p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Your suppliers don't have any active price lists at the moment
               </p>
-            </div>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
               {supplierPriceLists.map((supplierPriceList) => (
-                <button
+                <Card
                   key={`${supplierPriceList.supplierId}-${supplierPriceList.priceList.$id}`}
                   onClick={() => handleSelectSupplierPriceList(supplierPriceList)}
-                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-6 text-left border-2 border-transparent hover:border-customer-accent"
+                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-2 border-transparent hover:border-customer-accent/50 !p-0 overflow-hidden"
+                  glass
                 >
-                  <div className="flex flex-col h-full">
+                  <div className="p-6 flex flex-col h-full">
                     {/* Supplier Name */}
-                    <div className="mb-4">
-                      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                    <div className="mb-5">
+                      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2 group-hover:text-customer-accent transition-colors">
                         {supplierPriceList.supplierName}
                       </h3>
-                      <div className="h-1 w-12 bg-customer-accent rounded"></div>
+                      <div className="h-1 w-12 bg-customer-accent rounded-full group-hover:w-20 transition-all duration-300"></div>
                     </div>
 
                     {/* Price List Name */}
-                    <div className="flex-1 mb-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <div className="flex-1 mb-5">
+                      <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
                         Price List
                       </p>
-                      <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                      <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
                         {supplierPriceList.priceList.name}
                       </p>
                     </div>
 
                     {/* Delivery Window */}
-                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
-                        Delivery Window (ETA)
-                      </p>
-                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-                        {format(new Date(supplierPriceList.priceList.effective_date), "EEE dd-MM-yyyy")} -{" "}
+                    <div className="mb-6 p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-xl">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="material-symbols-outlined text-blue-500 text-sm">calendar_today</span>
+                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                          Delivery Window
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 pl-6">
+                        {format(new Date(supplierPriceList.priceList.effective_date), "EEE dd-MM")} -{" "}
                         {format(new Date(supplierPriceList.priceList.expiry_date!), "EEE dd-MM-yyyy")}
                       </p>
                     </div>
 
                     {/* CTA Button */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-customer-accent bg-opacity-10 dark:bg-customer-accent dark:bg-opacity-20 rounded-lg group-hover:bg-customer-accent group-hover:text-white transition-colors">
+                    <div className="flex items-center justify-between px-4 py-3 bg-customer-accent/5 dark:bg-customer-accent/10 rounded-xl group-hover:bg-customer-accent group-hover:text-white transition-all duration-300">
                       <span className="font-semibold text-customer-accent group-hover:text-white">
                         Create Order
                       </span>
-                      <span className="material-symbols-outlined text-customer-accent group-hover:text-white">
+                      <span className="material-symbols-outlined text-customer-accent group-hover:text-white transform group-hover:translate-x-1 transition-transform">
                         arrow_forward
                       </span>
                     </div>
                   </div>
-                </button>
+                </Card>
               ))}
             </div>
           )}
@@ -376,53 +373,57 @@ const PlaceOrder = () => {
         // ===== MASTER-DETAIL ORDERING VIEW =====
         <div className="flex flex-col h-full">
           {/* Compact Header - Single Row */}
-          <div className="flex items-center justify-between gap-4 mb-3 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <button
+          <div className="flex items-center justify-between gap-4 mb-4 flex-shrink-0 animate-fade-in">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleBackToSelection}
-                className="flex items-center gap-1 text-customer-accent hover:text-opacity-80 transition-colors text-sm"
+                leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
+                className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <span className="material-symbols-outlined text-lg">arrow_back</span>
-              </button>
+                Back
+              </Button>
               <div>
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 leading-tight">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 leading-tight">
                   {selectedSupplierPriceList?.supplierName}
                 </h2>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">
                   {selectedSupplierPriceList?.priceList.name}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-lg font-bold text-customer-accent leading-tight">
+                <p className="text-xl font-bold text-customer-accent leading-tight">
                   € {cartTotal.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                   {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
                 </p>
               </div>
-              <button
+              <Button
+                variant="primary"
                 onClick={handleViewSummary}
                 disabled={cart.size === 0}
-                className="px-3 py-2 bg-customer-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                className="bg-customer-accent hover:bg-customer-accent/90 shadow-lg shadow-customer-accent/20"
+                leftIcon={<span className="material-symbols-outlined">receipt_long</span>}
               >
-                <span className="material-symbols-outlined text-sm">receipt_long</span>
-                <span>Summary</span>
-              </button>
+                Summary
+              </Button>
             </div>
           </div>
 
           {/* Master-Detail Layout */}
-          <div className="flex gap-4 flex-1 overflow-hidden">
+          <div className="flex gap-4 flex-1 overflow-hidden animate-slide-up">
             {/* Left Column - Master (Category List) */}
-            <div className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">
+            <Card className="w-64 flex-shrink-0 !p-0 overflow-hidden flex flex-col" glass>
+              <div className="bg-gray-50/50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Categories
                 </h4>
               </div>
-              <div className="overflow-y-auto h-[calc(100%-3rem)]">
+              <div className="overflow-y-auto flex-1 p-2 space-y-1">
                 {categories.map((categoryName, index) => {
                   const isSelected = currentCategoryIndex === index;
                   const categoryProducts = productsMap.get(categoryName) || [];
@@ -432,35 +433,25 @@ const PlaceOrder = () => {
                     <button
                       key={categoryName}
                       onClick={() => setCurrentCategoryIndex(index)}
-                      className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-colors ${
-                        isSelected
-                          ? "bg-customer-accent/10 dark:bg-customer-accent/20 border-l-4 border-l-customer-accent"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ${isSelected
+                        ? "bg-customer-accent text-white shadow-md shadow-customer-accent/20"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {categoryIcon && (
                           <span
-                            className={`material-symbols-outlined text-lg ${
-                              isSelected
-                                ? "text-customer-accent"
-                                : "text-gray-500 dark:text-gray-400"
-                            }`}
+                            className={`material-symbols-outlined text-xl ${isSelected ? "text-white" : "text-gray-400"
+                              }`}
                           >
                             {categoryIcon}
                           </span>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm font-medium truncate ${
-                              isSelected
-                                ? "text-gray-900 dark:text-gray-100"
-                                : "text-gray-700 dark:text-gray-300"
-                            }`}
-                          >
+                          <p className={`text-sm font-semibold truncate`}>
                             {categoryName}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className={`text-xs ${isSelected ? "text-white/80" : "text-gray-400"}`}>
                             {categoryProducts.length} {categoryProducts.length === 1 ? "product" : "products"}
                           </p>
                         </div>
@@ -469,118 +460,68 @@ const PlaceOrder = () => {
                   );
                 })}
               </div>
-            </div>
+            </Card>
 
             {/* Right Content Area - Detail (Product Table) */}
-            <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <div className="h-full overflow-y-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Product
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Unit
-                    </th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Price/{currentCategoryUnit}
-                    </th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      {currentCategoryUnit}
-                    </th>
-                    {currentCategoryHasVac && (
-                      <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        {currentCategoryVacSurcharge !== null && currentCategoryVacSurcharge > 0
-                          ? `${currentCategoryUnit} (VAC +€${currentCategoryVacSurcharge.toFixed(2)}/kg)`
-                          : `${currentCategoryUnit} (VAC)`}
+            <Card className="flex-1 !p-0 overflow-hidden flex flex-col" glass>
+              <div className="h-full overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10 backdrop-blur-sm">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Product
                       </th>
-                    )}
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Subtotal
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {currentProducts.map((product) => {
-                    const cartItem = cart.get(product.product.$id!);
-                    const quantityRegular = cartItem?.quantity_regular || 0;
-                    const quantityVac = cartItem?.quantity_vac || 0;
-                    const subtotal = quantityRegular * (product.price_box || 0);
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Unit
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Price/{currentCategoryUnit}
+                      </th>
+                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {currentCategoryUnit}
+                      </th>
+                      {currentCategoryHasVac && (
+                        <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {currentCategoryVacSurcharge !== null && currentCategoryVacSurcharge > 0
+                            ? `${currentCategoryUnit} (VAC +€${currentCategoryVacSurcharge.toFixed(2)}/kg)`
+                            : `${currentCategoryUnit} (VAC)`}
+                        </th>
+                      )}
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Subtotal
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {currentProducts.map((product) => {
+                      const cartItem = cart.get(product.product.$id!);
+                      const quantityRegular = cartItem?.quantity_regular || 0;
+                      const quantityVac = cartItem?.quantity_vac || 0;
+                      const subtotal = quantityRegular * (product.price_box || 0);
 
-                    return (
-                      <tr
-                        key={product.product.$id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {product.product.name}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {product.category.unit_of_measure}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="text-sm">
-                            <p className="font-semibold text-gray-800 dark:text-gray-200">
-                              € {product.price_box?.toFixed(2)}
+                      return (
+                        <tr
+                          key={product.product.$id}
+                          className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {product.product.name}
                             </p>
-                          </div>
-                        </td>
-                        {/* Regular Quantity */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 justify-center">
-                            <button
-                              onClick={() =>
-                                handleQuantityChange(
-                                  product.product.$id!,
-                                  product.product.name,
-                                  product.price_box!,
-                                  Math.max(0, quantityRegular - 1),
-                                  quantityVac
-                                )
-                              }
-                              className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-lg">remove</span>
-                            </button>
-                            <input
-                              type="number"
-                              value={quantityRegular}
-                              onChange={(e) =>
-                                handleQuantityChange(
-                                  product.product.$id!,
-                                  product.product.name,
-                                  product.price_box!,
-                                  parseFloat(e.target.value) || 0,
-                                  quantityVac
-                                )
-                              }
-                              className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
-                              min="0"
-                              step="0.5"
-                            />
-                            <button
-                              onClick={() =>
-                                handleQuantityChange(
-                                  product.product.$id!,
-                                  product.product.name,
-                                  product.price_box!,
-                                  quantityRegular + 1,
-                                  quantityVac
-                                )
-                              }
-                              className="w-8 h-8 flex items-center justify-center bg-customer-accent text-white rounded hover:bg-opacity-90 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-lg">add</span>
-                            </button>
-                          </div>
-                        </td>
-                        {/* VAC Quantity */}
-                        {currentCategoryHasVac && (
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {product.category.unit_of_measure}
+                            </p>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="text-sm">
+                              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                € {product.price_box?.toFixed(2)}
+                              </p>
+                            </div>
+                          </td>
+                          {/* Regular Quantity */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2 justify-center">
                               <button
@@ -589,27 +530,27 @@ const PlaceOrder = () => {
                                     product.product.$id!,
                                     product.product.name,
                                     product.price_box!,
-                                    quantityRegular,
-                                    Math.max(0, quantityVac - 1)
+                                    Math.max(0, quantityRegular - 1),
+                                    quantityVac
                                   )
                                 }
-                                className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                               >
                                 <span className="material-symbols-outlined text-lg">remove</span>
                               </button>
                               <input
                                 type="number"
-                                value={quantityVac}
+                                value={quantityRegular}
                                 onChange={(e) =>
                                   handleQuantityChange(
                                     product.product.$id!,
                                     product.product.name,
                                     product.price_box!,
-                                    quantityRegular,
-                                    parseFloat(e.target.value) || 0
+                                    parseFloat(e.target.value) || 0,
+                                    quantityVac
                                   )
                                 }
-                                className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm"
+                                className="w-16 px-2 py-1 text-center border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm focus:ring-2 focus:ring-customer-accent focus:border-transparent outline-none"
                                 min="0"
                                 step="0.5"
                               />
@@ -619,29 +560,79 @@ const PlaceOrder = () => {
                                     product.product.$id!,
                                     product.product.name,
                                     product.price_box!,
-                                    quantityRegular,
-                                    quantityVac + 1
+                                    quantityRegular + 1,
+                                    quantityVac
                                   )
                                 }
-                                className="w-8 h-8 flex items-center justify-center bg-customer-accent text-white rounded hover:bg-opacity-90 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center bg-customer-accent text-white rounded-lg hover:bg-customer-accent/90 transition-colors shadow-sm"
                               >
                                 <span className="material-symbols-outlined text-lg">add</span>
                               </button>
                             </div>
                           </td>
-                        )}
-                        <td className="px-6 py-4 text-right">
-                          <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                            {subtotal > 0 ? `€ ${subtotal.toFixed(2)}` : '-'}
-                          </p>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            </div>
+                          {/* VAC Quantity */}
+                          {currentCategoryHasVac && (
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2 justify-center">
+                                <button
+                                  onClick={() =>
+                                    handleQuantityChange(
+                                      product.product.$id!,
+                                      product.product.name,
+                                      product.price_box!,
+                                      quantityRegular,
+                                      Math.max(0, quantityVac - 1)
+                                    )
+                                  }
+                                  className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-lg">remove</span>
+                                </button>
+                                <input
+                                  type="number"
+                                  value={quantityVac}
+                                  onChange={(e) =>
+                                    handleQuantityChange(
+                                      product.product.$id!,
+                                      product.product.name,
+                                      product.price_box!,
+                                      quantityRegular,
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-16 px-2 py-1 text-center border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm focus:ring-2 focus:ring-customer-accent focus:border-transparent outline-none"
+                                  min="0"
+                                  step="0.5"
+                                />
+                                <button
+                                  onClick={() =>
+                                    handleQuantityChange(
+                                      product.product.$id!,
+                                      product.product.name,
+                                      product.price_box!,
+                                      quantityRegular,
+                                      quantityVac + 1
+                                    )
+                                  }
+                                  className="w-8 h-8 flex items-center justify-center bg-customer-accent text-white rounded-lg hover:bg-customer-accent/90 transition-colors shadow-sm"
+                                >
+                                  <span className="material-symbols-outlined text-lg">add</span>
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                          <td className="px-6 py-4 text-right">
+                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                              {subtotal > 0 ? `€ ${subtotal.toFixed(2)}` : '-'}
+                            </p>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
         </div>
       )}
@@ -655,70 +646,93 @@ const PlaceOrder = () => {
       >
         <div className="space-y-6">
           {/* Supplier & Price List Info */}
-          <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Supplier</p>
-              <p className="font-medium text-gray-800 dark:text-gray-200">
-                {selectedSupplierPriceList?.supplierName}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Price List</p>
-              <p className="font-medium text-gray-800 dark:text-gray-200">
-                {selectedSupplierPriceList?.priceList.name}
-              </p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Delivery Window</p>
-              <p className="font-medium text-gray-800 dark:text-gray-200">
-                {selectedSupplierPriceList && format(new Date(selectedSupplierPriceList.priceList.effective_date), "EEE dd-MM-yyyy")} -{" "}
-                {selectedSupplierPriceList && format(new Date(selectedSupplierPriceList.priceList.expiry_date!), "EEE dd-MM-yyyy")}
-              </p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-gray-50/50 dark:bg-gray-700/30 border-none shadow-none">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Supplier</p>
+                  <p className="font-semibold text-gray-800 dark:text-gray-200 text-lg">
+                    {selectedSupplierPriceList?.supplierName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Price List</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">
+                    {selectedSupplierPriceList?.priceList.name}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="bg-gray-50/50 dark:bg-gray-700/30 border-none shadow-none">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    Delivery Window
+                  </p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">
+                    {selectedSupplierPriceList && format(new Date(selectedSupplierPriceList.priceList.effective_date), "EEE dd-MM-yyyy")} -{" "}
+                    {selectedSupplierPriceList && format(new Date(selectedSupplierPriceList.priceList.expiry_date!), "EEE dd-MM-yyyy")}
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* Order Items Grouped by Category */}
           <div>
-            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
+            <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-customer-accent">shopping_cart</span>
               Order Items ({cartItemCount} items)
             </h4>
             <div className="space-y-6">
               {Object.entries(groupedCartItems).map(([categoryName, items]) => (
-                <div key={categoryName}>
-                  <div className="space-y-2">
+                <div key={categoryName} className="bg-gray-50/50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                  <h5 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    {categoryName}
+                  </h5>
+                  <div className="space-y-3">
                     {items.map((item) => {
                       const hasVac = item.quantity_vac > 0;
                       const hasRegular = item.quantity_regular > 0;
                       const regularTotal = item.quantity_regular * item.unit_price;
 
                       return (
-                      <div
-                        key={item.product_id}
-                        className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {item.product_name}
-                          </p>
-                          <p className="font-semibold text-gray-800 dark:text-gray-200">
-                            € {regularTotal.toFixed(2)}
-                          </p>
+                        <div
+                          key={item.product_id}
+                          className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                              {item.product_name}
+                            </p>
+                            <p className="font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm">
+                              € {regularTotal.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            {hasRegular && (
+                              <div className="flex justify-between text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 p-2 rounded">
+                                <span className="font-medium">Regular Packaging</span>
+                                <span>{item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {hasVac && (
+                              <div className="flex justify-between text-gray-600 dark:text-gray-400 bg-orange-50 dark:bg-orange-900/10 p-2 rounded border border-orange-100 dark:border-orange-900/30">
+                                <span className="font-medium flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-orange-500 text-sm">science</span>
+                                  VAC Packaging
+                                </span>
+                                <div className="text-right">
+                                  <div>{item.quantity_vac} units</div>
+                                  <div className="text-orange-600 dark:text-orange-400 text-xs font-medium mt-0.5">
+                                    Surcharge to be calculated
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="space-y-1 text-xs">
-                          {hasRegular && (
-                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                              <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
-                              <span>€{regularTotal.toFixed(2)}</span>
-                            </div>
-                          )}
-                          {hasVac && (
-                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                              <span>VAC: {item.quantity_vac} units</span>
-                              <span className="text-orange-600 dark:text-orange-400">To be calculated</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
                       );
                     })}
                   </div>
@@ -729,53 +743,54 @@ const PlaceOrder = () => {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
               Order Notes (Optional)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-customer-accent resize-none text-sm"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-customer-accent resize-none text-sm shadow-sm transition-all"
               placeholder="Add any special requests or notes for this order..."
             />
           </div>
 
           {/* Total */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                Total
+          <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                Total Amount
               </span>
-              <span className="text-2xl font-bold text-customer-accent">
+              <span className="text-3xl font-bold text-customer-accent">
                 € {cartTotal.toFixed(2)}
               </span>
             </div>
 
             {/* VAC Surcharge Warning */}
-            <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-              <div className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg mt-0.5">
-                  info
-                </span>
-                <p className="text-xs text-orange-800 dark:text-orange-200">
-                  <strong>Note:</strong> The total amount does not include VAC surcharges. This charge will be calculated by the supplier in the final invoice based on the actual weight of the products.
+            <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl flex gap-3">
+              <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl flex-shrink-0">
+                info
+              </span>
+              <div>
+                <p className="text-sm font-bold text-orange-800 dark:text-orange-200 mb-1">
+                  VAC Surcharge Notice
+                </p>
+                <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                  The total amount does not include VAC surcharges. This charge will be calculated by the supplier in the final invoice based on the actual weight of the products.
                 </p>
               </div>
             </div>
 
-            <button
+            <Button
               onClick={handlePlaceOrder}
               disabled={placing}
-              className="w-full px-4 py-3 bg-customer-accent text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              isLoading={placing}
+              className="w-full bg-customer-accent hover:bg-customer-accent/90 text-white shadow-lg shadow-customer-accent/20"
+              size="lg"
+              leftIcon={!placing && <span className="material-symbols-outlined">check_circle</span>}
             >
-              {placing && (
-                <span className="animate-spin material-symbols-outlined text-base">
-                  progress_activity
-                </span>
-              )}
-              <span>{placing ? "Placing Order..." : "Submit Order"}</span>
-            </button>
+              Submit Order
+            </Button>
           </div>
         </div>
       </Modal>

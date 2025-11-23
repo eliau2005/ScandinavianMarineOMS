@@ -15,6 +15,8 @@ import type {
 import { parseCategoryVacSurcharges } from "../../../types/priceList";
 import { format } from "date-fns";
 import Modal from "../../common/Modal";
+import Button from "../../ui/Button";
+import Card from "../../ui/Card";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PriceListPDFDocument from "../../pdf/PriceListPDFDocument";
 import PriceListDetailView from "../../priceList/PriceListDetailView";
@@ -140,9 +142,8 @@ const ViewPriceHistory = () => {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-          statusColors[status as keyof typeof statusColors] || statusColors.draft
-        }`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[status as keyof typeof statusColors] || statusColors.draft
+          }`}
       >
         {status}
       </span>
@@ -155,11 +156,11 @@ const ViewPriceHistory = () => {
         // ==== LIST VIEW ====
         <>
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+          <div className="mb-8 animate-fade-in">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 tracking-tight">
               Price History
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
               View archived price lists from your suppliers
             </p>
           </div>
@@ -173,82 +174,100 @@ const ViewPriceHistory = () => {
               </div>
             </div>
           ) : supplierPriceLists.length === 0 ? (
-            <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-                history
-              </span>
-              <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+            <Card className="flex flex-col items-center justify-center py-16 animate-fade-in" glass>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-full mb-4">
+                <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-500">
+                  history
+                </span>
+              </div>
+              <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">
                 No price history available
               </p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Archived price lists from your suppliers will appear here
               </p>
-            </div>
+            </Card>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8 animate-slide-up">
               {supplierPriceLists.map((supplierData) => (
-                <div
+                <Card
                   key={supplierData.supplierId}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+                  className="overflow-hidden !p-0"
+                  glass
                 >
                   {/* Supplier Header */}
-                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                      {supplierData.supplierName}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {supplierData.priceLists.length} archived price{" "}
-                      {supplierData.priceLists.length === 1 ? "list" : "lists"}
-                    </p>
+                  <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                        {supplierData.supplierName}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
+                        {supplierData.priceLists.length} archived price{" "}
+                        {supplierData.priceLists.length === 1 ? "list" : "lists"}
+                      </p>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-customer-accent/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-customer-accent text-sm">
+                        inventory_2
+                      </span>
+                    </div>
                   </div>
 
                   {/* Price Lists Table */}
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                      <thead className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Price List Name
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Delivery Window
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Status
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {supplierData.priceLists.map((priceList) => (
                           <tr
                             key={priceList.$id}
-                            className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group"
                           >
-                            <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                            <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
                               {priceList.name}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                              {format(new Date(priceList.effective_date), "MMM dd")} -{" "}
-                              {format(new Date(priceList.expiry_date), "MMM dd, yyyy")}
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-gray-400 text-sm">event</span>
+                                <span>
+                                  {format(new Date(priceList.effective_date), "MMM dd")} -{" "}
+                                  {format(new Date(priceList.expiry_date), "MMM dd, yyyy")}
+                                </span>
+                              </div>
                             </td>
-                            <td className="px-4 py-3">{getStatusBadge(priceList.status)}</td>
-                            <td className="px-4 py-3 text-right">
-                              <button
+                            <td className="px-6 py-4">{getStatusBadge(priceList.status)}</td>
+                            <td className="px-6 py-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleViewPriceList(priceList)}
-                                className="text-customer-accent hover:text-opacity-80 text-sm font-medium"
+                                className="text-customer-accent hover:text-customer-accent hover:bg-customer-accent/10"
+                                rightIcon={<span className="material-symbols-outlined text-sm">arrow_forward</span>}
                               >
                                 View Details
-                              </button>
+                              </Button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -257,28 +276,33 @@ const ViewPriceHistory = () => {
         // ==== DETAILS VIEW ====
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header */}
-          <div className="flex-shrink-0 mb-4">
-            <button
+          <div className="flex-shrink-0 mb-6 animate-fade-in">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setViewMode('list');
                 setSelectedPriceList(null);
                 setTableData([]);
                 setSelectedCategoryId(null);
               }}
-              className="flex items-center gap-2 text-sm font-medium text-customer-accent hover:text-opacity-80 mb-4 transition-colors"
+              leftIcon={<span className="material-symbols-outlined">arrow_back</span>}
+              className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mb-4"
             >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
-              <span>Back to Price History</span>
-            </button>
+              Back to Price History
+            </Button>
 
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                   {selectedPriceList?.name}
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Supplier: {selectedPriceList?.supplier_name}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="material-symbols-outlined text-gray-400 text-sm">store</span>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {selectedPriceList?.supplier_name}
+                  </p>
+                </div>
               </div>
 
               {selectedPriceList && (
@@ -290,15 +314,17 @@ const ViewPriceHistory = () => {
                     />
                   }
                   fileName={`${selectedPriceList.name.replace(/[^a-z0-9]/gi, '_')}.pdf`}
-                  className="flex items-center gap-2 px-4 py-2 bg-customer-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+                  className="inline-block"
                 >
                   {({ loading }) => (
-                    <>
-                      <span className="material-symbols-outlined text-base">
-                        picture_as_pdf
-                      </span>
-                      <span>{loading ? "Generating..." : "Export PDF"}</span>
-                    </>
+                    <Button
+                      variant="primary"
+                      isLoading={loading}
+                      className="bg-customer-accent hover:bg-customer-accent/90"
+                      leftIcon={<span className="material-symbols-outlined">picture_as_pdf</span>}
+                    >
+                      {loading ? "Generating..." : "Export PDF"}
+                    </Button>
                   )}
                 </PDFDownloadLink>
               )}

@@ -43,6 +43,7 @@ export const OrderItemSchema = z.object({
   quantity_regular: z.number().min(0).default(0), // Quantity for regular packaging
   quantity_vac: z.number().min(0).default(0), // Quantity for VAC packaging
   unit_price: z.number().min(0), // Regular packaging price (per unit)
+  unit_price_vac: z.number().optional(), // VAC packaging price (per unit) - optional as it might be calculated differently
   vac_surcharge_at_order: z.number().optional().nullable(), // VAC surcharge per kg at time of order (snapshot for historical accuracy)
   total: z.number().min(0), // Total for regular packaging only (VAC calculated by supplier)
   notes: z.string().optional(),
@@ -70,6 +71,7 @@ export const OrderSchema = z.object({
   order_date: z.string().min(1, "Order date is required"),
   delivery_start_date: z.string().min(1, "Delivery start date is required"), // From price list effective_date
   delivery_end_date: z.string().min(1, "Delivery end date is required"), // From price list expiry_date
+  requested_delivery_date: z.string().optional().nullable(),
   total_amount: z.number().min(0).default(0),
   currency: z.string().max(10).default("EUR"),
   items: z.string().min(1, "Order must have items"), // JSON string

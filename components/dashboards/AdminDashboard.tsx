@@ -94,124 +94,120 @@ const AdminDashboard = () => {
           <div className="flex flex-1 gap-6 p-6">
             {/* Main Quick Actions Area */}
             <div className="flex-1">
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+              <div className="mb-8 animate-fade-in">
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 tracking-tight">
                   Welcome to Admin Panel
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
                   Quick actions to manage your system efficiently
                 </p>
               </div>
 
               {/* Quick Actions Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up">
                 {/* Manage Users */}
-                <button
-                  onClick={() => setActiveView("users")}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
-                >
-                  <div className="flex flex-col items-start gap-4">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
-                      <span className="material-symbols-outlined text-4xl text-admin-accent">
-                        group
+                <div onClick={() => setActiveView("users")}>
+                  <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 cursor-pointer border border-gray-100 dark:border-gray-700 hover:-translate-y-1">
+                    <div className="flex flex-col items-start gap-6">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-admin-accent/10 group-hover:bg-admin-accent/20 transition-colors duration-300">
+                        <span className="material-symbols-outlined text-4xl text-admin-accent">
+                          group
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 group-hover:text-admin-accent transition-colors">
+                          Manage Users
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                          Create and manage users in the system
+                        </p>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                      <span className="material-symbols-outlined text-2xl text-admin-accent">
+                        arrow_forward
                       </span>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Manage Users
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Create and manage users in the system
-                      </p>
-                    </div>
                   </div>
-                  <div className="absolute bottom-4 right-4">
-                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
-                      arrow_forward
-                    </span>
-                  </div>
-                </button>
+                </div>
 
                 {/* Manage Orders */}
-                <button
-                  onClick={() => setActiveView("orders")}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
-                >
-                  <div className="flex flex-col items-start gap-4">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
-                      <span className="material-symbols-outlined text-4xl text-admin-accent">
-                        shopping_cart
+                <div onClick={() => setActiveView("orders")}>
+                  <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 cursor-pointer border border-gray-100 dark:border-gray-700 hover:-translate-y-1">
+                    <div className="flex flex-col items-start gap-6">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-admin-accent/10 group-hover:bg-admin-accent/20 transition-colors duration-300">
+                        <span className="material-symbols-outlined text-4xl text-admin-accent">
+                          shopping_cart
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 group-hover:text-admin-accent transition-colors">
+                          Manage Orders
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                          View and manage all system orders
+                        </p>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                      <span className="material-symbols-outlined text-2xl text-admin-accent">
+                        arrow_forward
                       </span>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Manage Orders
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        View and manage all system orders
-                      </p>
-                    </div>
                   </div>
-                  <div className="absolute bottom-4 right-4">
-                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
-                      arrow_forward
-                    </span>
-                  </div>
-                </button>
+                </div>
 
                 {/* Manage Price Lists */}
-                <button
-                  onClick={() => setActiveView("pricing")}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
-                >
-                  <div className="flex flex-col items-start gap-4">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
-                      <span className="material-symbols-outlined text-4xl text-admin-accent">
-                        receipt_long
+                <div onClick={() => setActiveView("pricing")}>
+                  <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 cursor-pointer border border-gray-100 dark:border-gray-700 hover:-translate-y-1">
+                    <div className="flex flex-col items-start gap-6">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-admin-accent/10 group-hover:bg-admin-accent/20 transition-colors duration-300">
+                        <span className="material-symbols-outlined text-4xl text-admin-accent">
+                          receipt_long
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 group-hover:text-admin-accent transition-colors">
+                          Manage Price Lists
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                          Review and approve supplier price lists
+                        </p>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                      <span className="material-symbols-outlined text-2xl text-admin-accent">
+                        arrow_forward
                       </span>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Manage Price Lists
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Review and approve supplier price lists
-                      </p>
-                    </div>
                   </div>
-                  <div className="absolute bottom-4 right-4">
-                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
-                      arrow_forward
-                    </span>
-                  </div>
-                </button>
+                </div>
 
                 {/* Associate Customers with Suppliers */}
-                <button
-                  onClick={() => setActiveView("associations")}
-                  className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-8 text-left border-2 border-transparent hover:border-admin-accent"
-                >
-                  <div className="flex flex-col items-start gap-4">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-admin-accent bg-opacity-10 group-hover:bg-opacity-20 transition-colors">
-                      <span className="material-symbols-outlined text-4xl text-admin-accent">
-                        link
+                <div onClick={() => setActiveView("associations")}>
+                  <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 cursor-pointer border border-gray-100 dark:border-gray-700 hover:-translate-y-1">
+                    <div className="flex flex-col items-start gap-6">
+                      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-admin-accent/10 group-hover:bg-admin-accent/20 transition-colors duration-300">
+                        <span className="material-symbols-outlined text-4xl text-admin-accent">
+                          link
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2 group-hover:text-admin-accent transition-colors">
+                          Associate Customers
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                          Link customers with suppliers for ordering
+                        </p>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                      <span className="material-symbols-outlined text-2xl text-admin-accent">
+                        arrow_forward
                       </span>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                        Associate Customers
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Link customers with suppliers for ordering
-                      </p>
-                    </div>
                   </div>
-                  <div className="absolute bottom-4 right-4">
-                    <span className="material-symbols-outlined text-2xl text-admin-accent group-hover:translate-x-1 transition-transform">
-                      arrow_forward
-                    </span>
-                  </div>
-                </button>
+                </div>
               </div>
             </div>
 
@@ -251,8 +247,8 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col bg-background-light dark:bg-background-dark font-display">
-      <header className="flex h-16 w-full items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 md:px-6 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center">
+      <header className="flex h-20 w-full items-center justify-between border-b border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-6 md:px-8 sticky top-0 z-20 transition-all duration-300">
+        <div className="flex items-center gap-4">
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -262,27 +258,28 @@ const AdminDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <span className="material-symbols-outlined text-3xl text-admin-accent mr-2">
-            shield_person
-          </span>
-          <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Admin Panel
-          </h1>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-admin-accent/10 rounded-xl">
+              <span className="material-symbols-outlined text-3xl text-admin-accent">
+                shield_person
+              </span>
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+              Admin Panel
+            </h1>
+          </div>
         </div>
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-2 bg-gray-100/50 dark:bg-gray-800/50 p-1.5 rounded-xl">
           {navLinks.map((link) => (
             <button
               key={link.id}
               onClick={() => !link.disabled && setActiveView(link.id)}
-              className={`text-sm font-medium transition-colors ${
-                link.disabled
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${link.disabled
                   ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                  : `text-gray-600 dark:text-gray-300 hover:text-admin-accent dark:hover:text-admin-accent ${
-                      activeView === link.id
-                        ? "!text-admin-accent font-semibold"
-                        : ""
-                    }`
-              }`}
+                  : activeView === link.id
+                    ? "bg-white dark:bg-gray-700 text-admin-accent shadow-sm"
+                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
+                }`}
               aria-disabled={link.disabled}
             >
               {link.label}
@@ -291,9 +288,9 @@ const AdminDashboard = () => {
         </nav>
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-admin-accent text-white font-semibold rounded-lg shadow-md hover:bg-opacity-90 transition-colors text-sm"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-semibold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 text-sm group"
         >
-          <span className="material-symbols-outlined text-base">logout</span>
+          <span className="material-symbols-outlined text-xl group-hover:-translate-x-0.5 transition-transform">logout</span>
           <span>Logout</span>
         </button>
       </header>
