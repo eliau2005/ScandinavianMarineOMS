@@ -7,6 +7,9 @@ import { format } from "date-fns";
 import Modal from "../../common/Modal";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import OrderPDFDocument from "../../pdf/OrderPDFDocument";
+import Button from "../../ui/Button";
+import Input from "../../ui/Input";
+import Card from "../../ui/Card";
 
 interface OrderStats {
   total: number;
@@ -226,23 +229,25 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8 animate-slide-up">
         {statCards.map((card, index) => (
           <div
             key={index}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700"
+            className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl shadow-sm p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span
-                className={`${card.color} text-white p-2 rounded-lg material-symbols-outlined text-base`}
+            <div className="flex items-center justify-between mb-3">
+              <div
+                className={`${card.color} bg-opacity-10 p-2.5 rounded-xl`}
               >
-                {card.icon}
-              </span>
+                <span className={`material-symbols-outlined text-xl ${card.color.replace('bg-', 'text-')}`}>
+                  {card.icon}
+                </span>
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200 tracking-tight">
               {card.value}
             </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">
               {card.label}
             </p>
           </div>
@@ -250,86 +255,93 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
       </div>
 
       {/* Filters */}
-      <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card className="mb-8 !p-6 animate-fade-in" glass>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Search */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Search
+          <Input
+            label="Search"
+            leftIcon={
+              <span className="material-symbols-outlined text-xl">search</span>
+            }
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Order #, customer..."
+          />
+
+          {/* Customer Filter */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Customer
             </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
-                search
+              <select
+                value={filterCustomer}
+                onChange={(e) => setFilterCustomer(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent/50 transition-all appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800"
+              >
+                <option value="">All Customers</option>
+                {uniqueCustomers.map((customer) => (
+                  <option key={customer} value={customer}>
+                    {customer}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xl">
+                expand_more
               </span>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Order #, customer, supplier..."
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-              />
             </div>
           </div>
 
-          {/* Customer Filter */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Customer
-            </label>
-            <select
-              value={filterCustomer}
-              onChange={(e) => setFilterCustomer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-            >
-              <option value="">All Customers</option>
-              {uniqueCustomers.map((customer) => (
-                <option key={customer} value={customer}>
-                  {customer}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Supplier Filter */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
               Supplier
             </label>
-            <select
-              value={filterSupplier}
-              onChange={(e) => setFilterSupplier(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-            >
-              <option value="">All Suppliers</option>
-              {uniqueSuppliers.map((supplier) => (
-                <option key={supplier} value={supplier}>
-                  {supplier}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={filterSupplier}
+                onChange={(e) => setFilterSupplier(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent/50 transition-all appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800"
+              >
+                <option value="">All Suppliers</option>
+                {uniqueSuppliers.map((supplier) => (
+                  <option key={supplier} value={supplier}>
+                    {supplier}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xl">
+                expand_more
+              </span>
+            </div>
           </div>
 
           {/* Status Filter */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
               Status
             </label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-admin-accent/50 transition-all appearance-none cursor-pointer hover:bg-white dark:hover:bg-gray-800"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xl">
+                expand_more
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Content */}
       {loading ? (
@@ -352,71 +364,73 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
           </p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+              <thead className="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Order #
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Customer
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Supplier
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Total
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filteredOrders.map((order) => (
                   <tr
                     key={order.$id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors duration-200"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                       {order.order_number}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                       {order.customer_name}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                       {order.supplier_name}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                       {format(new Date(order.order_date), "MMM dd, yyyy")}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize shadow-sm ${getStatusColor(
                           order.status
                         )}`}
                       >
                         {getStatusLabel(order.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200 text-right">
+                    <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white text-right">
                       € {order.total_amount.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
+                    <td className="px-6 py-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleViewDetails(order)}
-                        className="text-admin-accent hover:text-opacity-80 text-sm font-medium"
+                        className="text-admin-accent hover:text-admin-accent hover:bg-admin-accent/10"
                       >
                         View Details
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -554,35 +568,35 @@ const OrdersOverview: React.FC<OrdersOverviewProps> = ({
                           const regularTotal = item.quantity_regular * item.unit_price;
 
                           return (
-                          <div
-                            key={index}
-                            className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                {item.product_name}
-                              </p>
-                              <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                € {regularTotal.toFixed(2)}
-                              </p>
+                            <div
+                              key={index}
+                              className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                  {item.product_name}
+                                </p>
+                                <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                  € {regularTotal.toFixed(2)}
+                                </p>
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                {hasRegular && (
+                                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
+                                    <span>€{regularTotal.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {hasVac && (
+                                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <span>VAC: {item.quantity_vac} units</span>
+                                    <span className="text-orange-600 dark:text-orange-400 font-medium">
+                                      Surcharge @ {item.vac_surcharge_at_order ? `€${item.vac_surcharge_at_order.toFixed(2)}` : 'N/A'}/kg
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="space-y-1 text-xs">
-                              {hasRegular && (
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                                  <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
-                                  <span>€{regularTotal.toFixed(2)}</span>
-                                </div>
-                              )}
-                              {hasVac && (
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                                  <span>VAC: {item.quantity_vac} units</span>
-                                  <span className="text-orange-600 dark:text-orange-400 font-medium">
-                                    Surcharge @ {item.vac_surcharge_at_order ? `€${item.vac_surcharge_at_order.toFixed(2)}` : 'N/A'}/kg
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
                           );
                         })}
                       </div>

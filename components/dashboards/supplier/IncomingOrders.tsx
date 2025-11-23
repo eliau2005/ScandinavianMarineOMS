@@ -5,6 +5,9 @@ import type { Order } from "../../../types/order";
 import { parseOrderItems, getStatusColor, getStatusLabel } from "../../../types/order";
 import { format } from "date-fns";
 import Modal from "../../common/Modal";
+import Button from "../../ui/Button";
+import Card from "../../ui/Card";
+import Input from "../../ui/Input";
 import { PDFDownloadLink, pdf } from "@react-pdf/renderer";
 import OrderPDFDocument from "../../pdf/OrderPDFDocument";
 import JSZip from "jszip";
@@ -235,11 +238,10 @@ const IncomingOrders = () => {
       {notification && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
           <div
-            className={`px-4 py-3 rounded-lg shadow-lg ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
-            }`}
+            className={`px-4 py-3 rounded-lg shadow-lg ${notification.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+              }`}
           >
             <p className="text-sm font-medium">{notification.message}</p>
           </div>
@@ -247,75 +249,62 @@ const IncomingOrders = () => {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 tracking-tight">
             All Orders
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
             Complete order history and management for your supplier account
           </p>
         </div>
         {filteredOrders.length > 0 && (
-          <button
+          <Button
             onClick={handleDownloadAllAsZip}
             disabled={generatingZip}
-            className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            isLoading={generatingZip}
+            className="bg-supplier-accent hover:bg-supplier-accent/90 text-white shadow-lg shadow-supplier-accent/20"
+            leftIcon={!generatingZip && <span className="material-symbols-outlined">folder_zip</span>}
           >
-            {generatingZip ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Generating ZIP...</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-base">folder_zip</span>
-                <span>Download All as ZIP</span>
-              </>
-            )}
-          </button>
+            Download All as ZIP
+          </Button>
         )}
       </div>
 
       {/* Status Filter Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8 animate-slide-up">
         {statusCards.map((card) => (
-          <button
+          <Card
             key={card.status}
             onClick={() => setFilterStatus(card.status)}
-            className={`${card.bgColor} rounded-lg shadow-md p-4 border-l-4 ${card.color} transition-all hover:shadow-lg ${
-              filterStatus === card.status ? "ring-2 ring-supplier-accent" : ""
-            }`}
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg border-l-4 ${card.color} ${filterStatus === card.status ? "ring-2 ring-supplier-accent transform scale-105" : "hover:scale-105"
+              } !p-4`}
+            glass
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="material-symbols-outlined text-gray-600 dark:text-gray-400 text-xl">
+              <span className={`material-symbols-outlined text-xl ${filterStatus === card.status ? "text-supplier-accent" : "text-gray-400"}`}>
                 {card.icon}
               </span>
               <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                 {card.count}
               </p>
             </div>
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {card.label}
             </p>
-          </button>
+          </Card>
         ))}
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by order # or customer name..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-supplier-accent"
-          />
-        </div>
+      <div className="mb-8 animate-fade-in">
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by order # or customer name..."
+          leftIcon={<span className="material-symbols-outlined">search</span>}
+          className="bg-white dark:bg-gray-800 shadow-sm"
+        />
       </div>
 
       {/* Content */}
@@ -327,72 +316,74 @@ const IncomingOrders = () => {
           </div>
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-600">
-            receipt_long
-          </span>
-          <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
+        <Card className="flex flex-col items-center justify-center py-16 animate-fade-in" glass>
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-full mb-4">
+            <span className="material-symbols-outlined text-6xl text-gray-400 dark:text-gray-500">
+              receipt_long
+            </span>
+          </div>
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">
             No orders found
           </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {filterStatus === "all"
               ? "You haven't received any orders yet"
               : `No ${filterStatus} orders`}
           </p>
-        </div>
+        </Card>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+        <Card className="overflow-hidden !p-0 animate-slide-up" glass>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+              <thead className="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Order #
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Customer
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Delivery Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Total
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                </tr >
+              </thead >
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {filteredOrders.map((order) => (
                   <tr
                     key={order.$id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">
                       {order.order_number}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                    <td className="px-6 py-4 text-sm text-gray-800 dark:text-gray-200">
                       {order.customer_name}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {format(new Date(order.order_date), "MMM dd, yyyy")}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {order.requested_delivery_date
                         ? format(
-                            new Date(order.requested_delivery_date),
-                            "MMM dd, yyyy"
-                          )
+                          new Date(order.requested_delivery_date),
+                          "MMM dd, yyyy"
+                        )
                         : "N/A"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(
                           order.status
@@ -401,23 +392,25 @@ const IncomingOrders = () => {
                         {getStatusLabel(order.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200 text-right">
+                    <td className="px-6 py-4 text-sm font-bold text-gray-800 dark:text-gray-200 text-right">
                       € {order.total_amount.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
+                    <td className="px-6 py-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleViewDetails(order)}
-                        className="text-supplier-accent hover:text-opacity-80 text-sm font-medium"
+                        className="text-supplier-accent hover:text-supplier-accent hover:bg-supplier-accent/10"
                       >
                         View Details
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Order Details Modal */}
@@ -431,67 +424,79 @@ const IncomingOrders = () => {
           title={`Order ${selectedOrder.order_number}`}
           wide
         >
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Export Button */}
             {selectedOrder.status !== "pending_approval" && (
-              <div className="flex justify-end mb-4">
+              <div className="flex justify-end">
                 <PDFDownloadLink
                   document={<OrderPDFDocument order={selectedOrder} />}
                   fileName={`Order-${selectedOrder.order_number}.pdf`}
-                  className="flex items-center gap-2 px-4 py-2 bg-supplier-accent text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+                  className="inline-block"
                 >
                   {({ loading }) => (
-                    <>
-                      <span className="material-symbols-outlined text-base">
-                        picture_as_pdf
-                      </span>
-                      <span>{loading ? "Generating..." : "Export PDF"}</span>
-                    </>
+                    <Button
+                      variant="primary"
+                      isLoading={loading}
+                      className="bg-supplier-accent hover:bg-supplier-accent/90 shadow-md"
+                      leftIcon={<span className="material-symbols-outlined">picture_as_pdf</span>}
+                    >
+                      {loading ? "Generating..." : "Export PDF"}
+                    </Button>
                   )}
                 </PDFDownloadLink>
               </div>
             )}
-            {/* Order Info */}
-            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Customer</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {selectedOrder.customer_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Price List</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {selectedOrder.price_list_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Order Date</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
-                  {format(new Date(selectedOrder.order_date), "MMMM dd, yyyy")}
-                </p>
-              </div>
-              {selectedOrder.requested_delivery_date && (
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Requested Delivery
-                  </p>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">
-                    {format(
-                      new Date(selectedOrder.requested_delivery_date),
-                      "MMMM dd, yyyy"
-                    )}
-                  </p>
+
+            {/* Order Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="bg-gray-50/50 dark:bg-gray-700/30 border-none shadow-none">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Customer</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200 text-lg">
+                      {selectedOrder.customer_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Price List</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">
+                      {selectedOrder.price_list_name}
+                    </p>
+                  </div>
                 </div>
-              )}
+              </Card>
+
+              <Card className="bg-gray-50/50 dark:bg-gray-700/30 border-none shadow-none">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Order Date</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">
+                      {format(new Date(selectedOrder.order_date), "MMMM dd, yyyy")}
+                    </p>
+                  </div>
+                  {selectedOrder.requested_delivery_date && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        Requested Delivery
+                      </p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">
+                        {format(
+                          new Date(selectedOrder.requested_delivery_date),
+                          "MMMM dd, yyyy"
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
 
             {/* Status Update */}
-            <div className="pb-4 border-b border-gray-200 dark:border-gray-700">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Order Status
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                Update Order Status
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {(
                   [
                     "pending",
@@ -506,11 +511,10 @@ const IncomingOrders = () => {
                     key={status}
                     onClick={() => handleStatusUpdate(selectedOrder.$id!, status)}
                     disabled={updatingStatus || selectedOrder.status === status}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      selectedOrder.status === status
-                        ? `${getStatusColor(status)} cursor-default`
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    } disabled:opacity-50 disabled:cursor-not-allowed capitalize`}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${selectedOrder.status === status
+                      ? `${getStatusColor(status)} shadow-md transform scale-105 cursor-default ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-opacity-50`
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-gray-200"
+                      } disabled:opacity-50 disabled:cursor-not-allowed capitalize tracking-wide`}
                   >
                     {getStatusLabel(status)}
                   </button>
@@ -520,7 +524,8 @@ const IncomingOrders = () => {
 
             {/* Items */}
             <div>
-              <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
+              <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-supplier-accent">inventory_2</span>
                 Order Items
               </h4>
               <div className="space-y-6">
@@ -537,43 +542,52 @@ const IncomingOrders = () => {
                   }, {} as Record<string, typeof items>);
 
                   return Object.entries(grouped).map(([categoryName, categoryItems]) => (
-                    <div key={categoryName}>
-                      <div className="space-y-2">
+                    <div key={categoryName} className="bg-gray-50/50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                      <h5 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                        {categoryName}
+                      </h5>
+                      <div className="space-y-3">
                         {categoryItems.map((item, index) => {
                           const hasVac = item.quantity_vac > 0;
                           const hasRegular = item.quantity_regular > 0;
                           const regularTotal = item.quantity_regular * item.unit_price;
 
                           return (
-                          <div
-                            key={index}
-                            className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                {item.product_name}
-                              </p>
-                              <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                € {regularTotal.toFixed(2)}
-                              </p>
+                            <div
+                              key={index}
+                              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                                  {item.product_name}
+                                </p>
+                                <p className="font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm">
+                                  € {regularTotal.toFixed(2)}
+                                </p>
+                              </div>
+                              <div className="space-y-2 text-sm">
+                                {hasRegular && (
+                                  <div className="flex justify-between text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 p-2 rounded">
+                                    <span className="font-medium">Regular Packaging</span>
+                                    <span>{item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {hasVac && (
+                                  <div className="flex justify-between text-gray-600 dark:text-gray-400 bg-orange-50 dark:bg-orange-900/10 p-2 rounded border border-orange-100 dark:border-orange-900/30">
+                                    <span className="font-medium flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-orange-500 text-sm">science</span>
+                                      VAC Packaging
+                                    </span>
+                                    <div className="text-right">
+                                      <div>{item.quantity_vac} units</div>
+                                      <div className="text-orange-600 dark:text-orange-400 text-xs font-medium mt-0.5">
+                                        Surcharge @ {item.vac_surcharge_at_order ? `€${item.vac_surcharge_at_order.toFixed(2)}` : 'N/A'}/kg
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="space-y-1 text-xs">
-                              {hasRegular && (
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                                  <span>Regular: {item.quantity_regular} × €{item.unit_price.toFixed(2)}</span>
-                                  <span>€{regularTotal.toFixed(2)}</span>
-                                </div>
-                              )}
-                              {hasVac && (
-                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                                  <span>VAC: {item.quantity_vac} units</span>
-                                  <span className="text-orange-600 dark:text-orange-400 font-medium">
-                                    Surcharge @ {item.vac_surcharge_at_order ? `€${item.vac_surcharge_at_order.toFixed(2)}` : 'N/A'}/kg
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
                           );
                         })}
                       </div>
@@ -584,24 +598,27 @@ const IncomingOrders = () => {
             </div>
 
             {/* Total */}
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  Total
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                  Total Amount
                 </span>
-                <span className="text-2xl font-bold text-supplier-accent">
+                <span className="text-3xl font-bold text-supplier-accent">
                   € {selectedOrder.total_amount.toFixed(2)}
                 </span>
               </div>
 
               {/* VAC Surcharge Note */}
-              <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-lg mt-0.5">
-                    info
-                  </span>
-                  <p className="text-xs text-orange-800 dark:text-orange-200">
-                    <strong>Note:</strong> VAC packaging surcharges are not included in the total above. Calculate these charges based on the actual weight of VAC items and include them in your final invoice.
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl flex gap-3">
+                <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl flex-shrink-0">
+                  info
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-orange-800 dark:text-orange-200 mb-1">
+                    VAC Surcharge Notice
+                  </p>
+                  <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                    VAC packaging surcharges are not included in the total above. Please calculate these charges based on the actual weight of VAC items and include them in your final invoice.
                   </p>
                 </div>
               </div>
@@ -610,18 +627,18 @@ const IncomingOrders = () => {
             {/* Customer Notes */}
             {selectedOrder.customer_notes && (
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                   Customer Notes
                 </p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                  {selectedOrder.customer_notes}
-                </p>
+                <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-lg border border-yellow-100 dark:border-yellow-900/30 text-sm text-gray-800 dark:text-gray-200 italic">
+                  "{selectedOrder.customer_notes}"
+                </div>
               </div>
             )}
           </div>
         </Modal>
       )}
-    </div>
+    </div >
   );
 };
 

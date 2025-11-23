@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./index.css";
 import { account, databases, appwriteConfig } from "./lib/appwrite";
 import { Models } from "appwrite";
 import Login from "./components/Login";
