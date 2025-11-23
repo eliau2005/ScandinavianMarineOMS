@@ -228,13 +228,14 @@ export const stringifyOrderItems = (items: OrderItem[]): string => {
 };
 
 /**
- * Calculate order total from items (regular quantities only)
- * VAC quantities are not included in the system calculation
+ * Calculate order total from items (regular and VAC quantities)
+ * Note: This includes the base price for VAC items, but NOT the surcharge (which is calculated by supplier)
  */
 export const calculateOrderTotal = (items: OrderItem[]): number => {
   return items.reduce((sum, item) => {
     const regularTotal = (item.quantity_regular || 0) * item.unit_price;
-    return sum + regularTotal;
+    const vacTotal = (item.quantity_vac || 0) * item.unit_price;
+    return sum + regularTotal + vacTotal;
   }, 0);
 };
 

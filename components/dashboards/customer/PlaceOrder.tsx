@@ -181,6 +181,7 @@ const PlaceOrder = () => {
         }
 
         const regularTotal = item.quantity_regular * item.unit_price;
+        const vacBaseTotal = item.quantity_vac * item.unit_price;
 
         return {
           product_id: item.product_id,
@@ -191,7 +192,7 @@ const PlaceOrder = () => {
           quantity_vac: item.quantity_vac,
           unit_price: item.unit_price,
           vac_surcharge_at_order: vacSurcharge,
-          total: regularTotal,
+          total: regularTotal + vacBaseTotal,
         };
       });
 
@@ -240,7 +241,8 @@ const PlaceOrder = () => {
   const cartTotal = Array.from(cart.values()).reduce(
     (sum, item) => {
       const regularTotal = item.quantity_regular * item.unit_price;
-      return sum + regularTotal;
+      const vacBaseTotal = item.quantity_vac * item.unit_price;
+      return sum + regularTotal + vacBaseTotal;
     },
     0
   );
@@ -696,6 +698,8 @@ const PlaceOrder = () => {
                       const hasVac = item.quantity_vac > 0;
                       const hasRegular = item.quantity_regular > 0;
                       const regularTotal = item.quantity_regular * item.unit_price;
+                      const vacBaseTotal = item.quantity_vac * item.unit_price;
+                      const itemTotal = regularTotal + vacBaseTotal;
 
                       return (
                         <div
@@ -707,7 +711,7 @@ const PlaceOrder = () => {
                               {item.product_name}
                             </p>
                             <p className="font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm">
-                              € {regularTotal.toFixed(2)}
+                              € {itemTotal.toFixed(2)}
                             </p>
                           </div>
                           <div className="space-y-2 text-sm">
@@ -724,9 +728,9 @@ const PlaceOrder = () => {
                                   VAC Packaging
                                 </span>
                                 <div className="text-right">
-                                  <div>{item.quantity_vac} units</div>
+                                  <div>{item.quantity_vac} units × €{item.unit_price.toFixed(2)}</div>
                                   <div className="text-orange-600 dark:text-orange-400 text-xs font-medium mt-0.5">
-                                    Surcharge to be calculated
+                                    + Surcharge to be calculated
                                   </div>
                                 </div>
                               </div>

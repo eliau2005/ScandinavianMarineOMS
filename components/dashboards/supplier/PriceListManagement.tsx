@@ -26,7 +26,7 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import PriceListPDFDocument from "../../pdf/PriceListPDFDocument";
 import PriceListDetailView from "../../priceList/PriceListDetailView";
 
-type View = "list" | "edit" | "view";
+type View = "list" | "detail";
 
 interface Notification {
   type: "success" | "error" | "info";
@@ -190,7 +190,7 @@ const PriceListManagement = () => {
       await loadPriceLists();
       showNotification("success", "Price list created successfully");
       // Open the new price list for editing
-      setView("edit");
+      setView("detail");
       await loadPriceListDetails(newList.$id!);
     } catch (error) {
       console.error("Error creating price list:", error);
@@ -199,12 +199,12 @@ const PriceListManagement = () => {
   };
 
   const handleViewPriceList = async (priceList: PriceList) => {
-    setView("view");
+    setView("detail");
     await loadPriceListDetails(priceList.$id!);
   };
 
   const handleEditPriceList = async (priceList: PriceList) => {
-    setView("edit");
+    setView("detail");
     await loadPriceListDetails(priceList.$id!);
   };
 
@@ -505,118 +505,118 @@ const PriceListManagement = () => {
     </div>
   );
 
-      const renderEditView = () => {
-        return (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Fixed Header */}
-            <div className="flex-shrink-0 px-6 pt-6 pb-5 bg-background-light dark:bg-background-dark border-b-2 border-gray-100 dark:border-gray-700">
-              <button
-                onClick={() => {
-                  setView("list");
-                  setSelectedCategoryId(null);
-                }}
-                className="flex items-center gap-2 text-sm font-medium text-supplier-accent hover:text-opacity-80 mb-5 transition-colors"
-              >
-                <span className="material-symbols-outlined text-base">arrow_back</span>
-                <span>Back to Price Lists</span>
-              </button>
+  const renderDetailView = () => {
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-5 bg-background-light dark:bg-background-dark border-b-2 border-gray-100 dark:border-gray-700">
+          <button
+            onClick={() => {
+              setView("list");
+              setSelectedCategoryId(null);
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-supplier-accent hover:text-opacity-80 mb-5 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <span>Back to Price Lists</span>
+          </button>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                    {selectedPriceList?.name}
-                  </h2>
-                  <div className="h-1 w-16 bg-supplier-accent rounded mb-3"></div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedPriceList?.status === "draft"
-                      ? "Edit prices for this list"
-                      : selectedPriceList?.status === "pending_approval"
-                      ? "Pending approval - View-only mode"
-                      : selectedPriceList?.status === "active"
-                      ? "Active price list - View-only mode"
-                      : "Archived - View-only mode"}
-                  </p>
-                </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                {selectedPriceList?.name}
+              </h2>
+              <div className="h-1 w-16 bg-supplier-accent rounded mb-3"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedPriceList?.status === "draft"
+                  ? "Edit prices for this list"
+                  : selectedPriceList?.status === "pending_approval"
+                  ? "Pending approval - View-only mode"
+                  : selectedPriceList?.status === "active"
+                  ? "Active price list - View-only mode"
+                  : "Archived - View-only mode"}
+              </p>
+            </div>
 
-                <div className="flex items-center gap-3">
-                  {selectedPriceList && (
-                    <PDFDownloadLink
-                      document={
-                        <PriceListPDFDocument
-                          priceList={selectedPriceList}
-                          tableData={tableData}
-                        />
-                      }
-                      fileName={`${selectedPriceList.name}.pdf`}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
-                    >
-                      {({ loading }) => (
-                        <>
-                          <span className="material-symbols-outlined text-base">picture_as_pdf</span>
-                          <span>{loading ? "Generating..." : "Export PDF"}</span>
-                        </>
-                      )}
-                    </PDFDownloadLink>
-                  )}
-
-                  {selectedPriceList?.status === "pending_approval" && (
-                    <button
-                      onClick={() => selectedPriceList && handleCancelRequest(selectedPriceList)}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 hover:shadow-lg transition-all"
-                    >
-                      <span className="material-symbols-outlined text-base">cancel</span>
-                      <span>Cancel Request</span>
-                    </button>
-                  )}
-
-                  {selectedPriceList?.status === "draft" && (
+            <div className="flex items-center gap-3">
+              {selectedPriceList && (
+                <PDFDownloadLink
+                  document={
+                    <PriceListPDFDocument
+                      priceList={selectedPriceList}
+                      tableData={tableData}
+                    />
+                  }
+                  fileName={`${selectedPriceList.name}.pdf`}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
+                >
+                  {({ loading }) => (
                     <>
-                      <button
-                        onClick={handleClearAllPrices}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
-                      >
-                        <span className="material-symbols-outlined text-base">clear_all</span>
-                        <span>Clear All Prices</span>
-                      </button>
-
-                      <button
-                        onClick={handleSavePrices}
-                        disabled={saving}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-supplier-accent text-white rounded-lg text-sm font-semibold hover:bg-opacity-90 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {saving && (
-                          <span className="animate-spin material-symbols-outlined text-base">
-                            progress_activity
-                          </span>
-                        )}
-                        <span>{saving ? "Saving..." : "Save Prices"}</span>
-                      </button>
+                      <span className="material-symbols-outlined text-base">picture_as_pdf</span>
+                      <span>{loading ? "Generating..." : "Export PDF"}</span>
                     </>
                   )}
-                </div>
-              </div>
-            </div>
+                </PDFDownloadLink>
+              )}
 
-            {/* Master-Detail Layout */}
-            <div className="flex-1 overflow-hidden px-6 pb-6">
-              <div className="h-full pt-6">
-                {selectedPriceList && (
-                  <PriceListDetailView
-                    tableData={tableData}
-                    priceList={selectedPriceList}
-                    editable={selectedPriceList.status === "draft"}
-                    selectedCategoryId={selectedCategoryId}
-                    onSelectCategory={setSelectedCategoryId}
-                    onPriceChange={handlePriceChange}
-                    categoryVacSurcharges={categoryVacSurcharges}
-                    onCategoryVacSurchargeChange={handleCategoryVacSurchargeChange}
-                  />
-                )}
-              </div>
+              {selectedPriceList?.status === "pending_approval" && (
+                <button
+                  onClick={() => selectedPriceList && handleCancelRequest(selectedPriceList)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 hover:shadow-lg transition-all"
+                >
+                  <span className="material-symbols-outlined text-base">cancel</span>
+                  <span>Cancel Request</span>
+                </button>
+              )}
+
+              {selectedPriceList?.status === "draft" && (
+                <>
+                  <button
+                    onClick={handleClearAllPrices}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined text-base">clear_all</span>
+                    <span>Clear All Prices</span>
+                  </button>
+
+                  <button
+                    onClick={handleSavePrices}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-supplier-accent text-white rounded-lg text-sm font-semibold hover:bg-opacity-90 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving && (
+                      <span className="animate-spin material-symbols-outlined text-base">
+                        progress_activity
+                      </span>
+                    )}
+                    <span>{saving ? "Saving..." : "Save Prices"}</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        );
-      };
+        </div>
+
+        {/* Master-Detail Layout */}
+        <div className="flex-1 overflow-hidden px-6 pb-6">
+          <div className="h-full pt-6">
+            {selectedPriceList && (
+              <PriceListDetailView
+                tableData={tableData}
+                priceList={selectedPriceList}
+                editable={selectedPriceList.status === "draft"}
+                selectedCategoryId={selectedCategoryId}
+                onSelectCategory={setSelectedCategoryId}
+                onPriceChange={handlePriceChange}
+                categoryVacSurcharges={categoryVacSurcharges}
+                onCategoryVacSurchargeChange={handleCategoryVacSurchargeChange}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   
 
@@ -718,8 +718,7 @@ const PriceListManagement = () => {
 
       {/* Main Content */}
       {view === "list" && renderListView()}
-      {view === "edit" && renderEditView()}
-      {view === "view" && renderViewView()}
+      {view === "detail" && renderDetailView()}
 
       {/* Create Modal */}
       {currentUser && (
