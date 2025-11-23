@@ -3,7 +3,8 @@ import { account, databases, appwriteConfig } from "../lib/appwrite";
 import { AppwriteException } from "appwrite";
 import Button from "./ui/Button";
 import Input from "./ui/Input";
-import Card from "./ui/Card";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Anchor } from "lucide-react";
 
 type UserType = "Admin" | "Supplier" | "Customer";
 
@@ -20,43 +21,20 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const accentColors = {
-    Admin: {
-      text: "text-admin-accent",
-      bg: "bg-admin-accent",
-    },
-    Supplier: {
-      text: "text-supplier-accent",
-      bg: "bg-supplier-accent",
-    },
-    Customer: {
-      text: "text-customer-accent",
-      bg: "bg-customer-accent",
-    },
-  };
-
-  const currentAccent = accentColors[userType];
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // Create email session with Appwrite
       await account.createEmailPasswordSession(email, password);
-
-      // Get current user
       const user = await account.get();
-
-      // Fetch user profile to check role
       const profileDoc = await databases.getDocument(
         appwriteConfig.databaseId,
         appwriteConfig.profilesCollectionId,
         user.$id
       );
 
-      // Check if the role matches the selected user type
       if (profileDoc.role !== userType) {
         await account.deleteSession("current");
         throw new Error(
@@ -83,137 +61,206 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const getThemeColor = (type: UserType) => {
+    switch (type) {
+      case "Admin": return "text-blue-600";
+      case "Supplier": return "text-emerald-600";
+      case "Customer": return "text-indigo-600";
+      default: return "text-blue-600";
+    }
+  };
+
+  const getButtonColor = (type: UserType) => {
+    switch (type) {
+      case "Admin": return "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500";
+      case "Supplier": return "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500";
+      case "Customer": return "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500";
+      default: return "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500";
+    }
+  };
+
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
-      {/* Background Image with Overlay */}
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden">
+      {/* Background Image with Blur - Using inline style for reliability */}
       <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1516916759473-600c07bc5d5f?q=80&w=2560&auto=format&fit=crop')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2560&auto=format&fit=crop')" }}
+      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      {/* Floating Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md p-6 sm:p-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 mx-4"
       >
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
-      </div>
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-600/20"
+          >
+            <Anchor className="w-7 h-7" />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-2xl font-bold text-gray-900 dark:text-white text-center"
+          >
+            Welcome Back
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-gray-500 dark:text-gray-400 text-sm mt-1 text-center"
+          >
+            Sign in to Scandinavian Marine OMS
+          </motion.p>
+        </div>
 
-      {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md px-4 animate-fade-in">
-        <Card glass className="w-full p-8 sm:p-10 border-white/20 shadow-2xl">
-          <div className="flex flex-col items-center gap-6 mb-8">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-2">
-                Welcome Back
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                Sign in to Scandinavian Marine OMS
-              </p>
-            </div>
+        {/* User Type Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg mb-6"
+        >
+          {(["Admin", "Supplier", "Customer"] as UserType[]).map((type) => (
+            <button
+              key={type}
+              onClick={() => setUserType(type)}
+              className={`
+                flex-1 py-2 text-sm font-medium rounded-md transition-all duration-200 relative
+                ${userType === type
+                  ? "text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                }
+              `}
+            >
+              {userType === type && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-white dark:bg-gray-700 rounded-md shadow-sm"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{type}</span>
+            </button>
+          ))}
+        </motion.div>
 
-            {/* User Type Selector */}
-            <div className="w-full p-1.5 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl backdrop-blur-sm border border-white/20 dark:border-gray-700/30 flex relative">
-              {/* Animated Background Pill - Simplified for now with direct classes */}
-              {(["Admin", "Supplier", "Customer"] as UserType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setUserType(type)}
-                  className={`
-                    flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative z-10
-                    ${userType === type
-                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                    }
-                  `}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+          >
             <Input
-              label="Email Address"
+              label="Email"
               type="email"
               placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
-              leftIcon={<span className="material-symbols-outlined text-[20px]">mail</span>}
+              className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
             />
+          </motion.div>
 
-            <div className="relative">
-              <Input
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                leftIcon={<span className="material-symbols-outlined text-[20px]">lock</span>}
-                rightIcon={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="focus:outline-none hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">
-                      {showPassword ? "visibility_off" : "visibility"}
-                    </span>
-                  </button>
-                }
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+            className="relative"
+          >
+            <Input
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="focus:outline-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              }
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="flex items-center justify-between pt-1"
+          >
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
               />
-            </div>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Remember me</span>
+            </label>
+            <a href="#" className={`text-sm font-medium hover:underline ${getThemeColor(userType)}`}>
+              Forgot password?
+            </a>
+          </motion.div>
 
+          <AnimatePresence mode="wait">
             {error && (
-              <div className="p-3 rounded-lg bg-red-50/80 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm flex items-center gap-2 animate-shake">
-                <span className="material-symbols-outlined text-[18px]">error</span>
-                {error}
-              </div>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {error}
+                </div>
+              </motion.div>
             )}
+          </AnimatePresence>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className={`
-                    rounded border-gray-300 text-primary focus:ring-primary 
-                    transition-colors duration-200 cursor-pointer
-                  `}
-                />
-                <span className="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
-                  Remember me
-                </span>
-              </label>
-              <a href="#" className="text-primary hover:text-primary/80 font-medium transition-colors">
-                Forgot password?
-              </a>
-            </div>
-
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+          >
             <Button
               type="submit"
-              variant="primary"
               size="lg"
               isLoading={loading}
-              className={`w-full mt-2 ${userType === "Admin" ? "bg-admin-accent hover:bg-admin-accent/90 shadow-admin-accent/30" :
-                  userType === "Supplier" ? "bg-supplier-accent hover:bg-supplier-accent/90 shadow-supplier-accent/30" :
-                    "bg-customer-accent hover:bg-customer-accent/90 shadow-customer-accent/30"
-                }`}
+              className={`w-full justify-center shadow-lg shadow-blue-900/5 ${getButtonColor(userType)}`}
             >
-              Sign In
+              Sign in
             </Button>
-          </form>
-        </Card>
+          </motion.div>
+        </form>
 
-        <p className="text-center mt-8 text-white/60 text-sm">
-          &copy; {new Date().getFullYear()} Scandinavian Marine. All rights reserved.
-        </p>
-      </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.0 }}
+          className="mt-8 text-center text-xs text-gray-400"
+        >
+          &copy; {new Date().getFullYear()} Scandinavian Marine OMS
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
